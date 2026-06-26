@@ -107,40 +107,34 @@ function ExplorerPage() {
                     );
                   })}
                 </div>
-                <form onSubmit={handleZipSubmit} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{5}"
-                    maxLength={5}
-                    value={zipQuery}
-                    onChange={(e) => setZipQuery(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="ZIP code"
-                    aria-label="Search by ZIP code"
-                    className="w-28 bg-background border border-edge rounded-md px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 bg-brand text-brand-foreground rounded-md text-xs font-bold uppercase tracking-wider"
+                <div className="flex items-center gap-2">
+                  <select
+                    value={slug}
+                    onChange={(e) => {
+                      const s = e.target.value;
+                      setSlug(s);
+                    }}
+                    aria-label="Select ZIP code"
+                    className="w-48 bg-background border border-edge rounded-md px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30"
                   >
-                    Zoom
-                  </button>
+                    {allZipOptions.map((o) => (
+                      <option key={o.zip} value={o.slug}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
                   {selected && (
                     <button
                       type="button"
-                      onClick={() => { setSlug(""); setZipQuery(""); setZipError(""); }}
+                      onClick={() => setSlug("")}
                       className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted hover:text-foreground"
                     >
                       Reset
                     </button>
                   )}
-                </form>
-              </div>
-              {zipError && (
-                <div className="px-4 py-2 text-xs text-brand bg-brand/5 border-b border-edge">
-                  {zipError}
                 </div>
-              )}
+              </div>
+              {/* ZIP dropdown replaced text input */}
 
               <div className="relative w-full aspect-[16/9] bg-surface overflow-hidden">
                 <NycGoogleMap
@@ -149,7 +143,7 @@ function ExplorerPage() {
                   )}
                   permit={permit}
                   selectedSlug={slug}
-                  onSelect={(s: string) => { setSlug(s); setZipError(""); }}
+                  onSelect={(s: string) => { setSlug(s); }}
                 />
                 <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border border-edge rounded-md px-2 py-1 text-[10px] font-semibold text-ink-muted pointer-events-none">
                   {selected ? `Zoomed: ${selected.name} · ${selected.zips[0]}` : "Click a marker or search a ZIP"}
