@@ -21,6 +21,8 @@ export interface Neighborhood {
   // approximate position on a 100x100 stylized NYC grid (x = east, y = south)
   x: number;
   y: number;
+  lat: number;
+  lng: number;
 }
 
 export function findNeighborhoodByZip(zip: string): Neighborhood | undefined {
@@ -55,6 +57,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Community Board 4 review cycle",
     zips: ["11206", "11221", "11237"],
     x: 62, y: 52,
+    lat: 40.6943, lng: -73.9213,
   },
   {
     slug: "williamsburg",
@@ -73,6 +76,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "DOB plan examiner backlog",
     zips: ["11211", "11222", "11249"],
     x: 60, y: 47,
+    lat: 40.7081, lng: -73.9571,
   },
   {
     slug: "astoria",
@@ -91,6 +95,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Fire Department site inspection",
     zips: ["11102","11103","11106"],
     x: 70, y: 40,
+    lat: 40.772, lng: -73.9301,
   },
   {
     slug: "lower-east-side",
@@ -109,6 +114,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Community Board 3 approval window",
     zips: ["10002","10003"],
     x: 52, y: 45,
+    lat: 40.715, lng: -73.9843,
   },
   {
     slug: "harlem",
@@ -127,6 +133,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Landmark Preservation review (when applicable)",
     zips: ["10026","10027","10030"],
     x: 50, y: 30,
+    lat: 40.8116, lng: -73.9465,
   },
   {
     slug: "sunset-park",
@@ -145,6 +152,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Health Department inspection queue",
     zips: ["11220","11232"],
     x: 55, y: 62,
+    lat: 40.6453, lng: -74.0107,
   },
   {
     slug: "flatbush",
@@ -163,6 +171,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "DOB plan examiner backlog",
     zips: ["11226","11210"],
     x: 58, y: 68,
+    lat: 40.6409, lng: -73.9624,
   },
   {
     slug: "south-bronx",
@@ -181,6 +190,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Document intake processing",
     zips: ["10451","10454","10455"],
     x: 55, y: 22,
+    lat: 40.8166, lng: -73.9173,
   },
   {
     slug: "st-george",
@@ -199,6 +209,7 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     primaryBottleneck: "Borough President sign-off",
     zips: ["10301","10304"],
     x: 32, y: 72,
+    lat: 40.6437, lng: -74.0779,
   },
 ];
 
