@@ -113,7 +113,7 @@ async function loadZipMetadata(sinceIso: string, minCount: number, limit: number
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select:
-        "postcode, borough, min(nta) as nta, avg(latitude) as lat, avg(longitude) as lng, count(*) as cnt",
+        "postcode, borough, min(nta) as nta, avg(latitude::number) as lat, avg(longitude::number) as lng, count(*) as cnt",
       $where: `${APPROVED_AND_ISSUED} AND postcode IS NOT NULL AND latitude IS NOT NULL AND first_permit_date >= '${sinceIso}'`,
       $group: "postcode, borough",
       $having: `cnt > ${minCount}`,
