@@ -38,8 +38,6 @@ function ExplorerPage() {
   const [boroughFilter, setBoroughFilter] = useState<Borough | "All">("All");
   const [permit, setPermit] = useState<PermitType>("Commercial Renovation (Alt-1)");
   const [slug, setSlug] = useState<string>("bushwick");
-  const [zipQuery, setZipQuery] = useState<string>("");
-  const [zipError, setZipError] = useState<string>("");
 
   const estimate = useMemo(() => estimateTimeline(slug, permit), [slug, permit]);
   const friction = useMemo(() => boroughFriction(), []);
