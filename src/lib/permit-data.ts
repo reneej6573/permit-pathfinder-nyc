@@ -17,6 +17,15 @@ export interface Neighborhood {
   days: Record<PermitType, number>;
   trend: number; // % change last 90 days (positive = slower)
   primaryBottleneck: string;
+  zips: string[];
+  // approximate position on a 100x100 stylized NYC grid (x = east, y = south)
+  x: number;
+  y: number;
+}
+
+export function findNeighborhoodByZip(zip: string): Neighborhood | undefined {
+  const z = zip.trim();
+  return NEIGHBORHOODS.find((n) => n.zips.includes(z));
 }
 
 export const PERMIT_TYPES: PermitType[] = [
