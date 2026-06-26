@@ -161,7 +161,7 @@ function ExplorerPage() {
                   )}
                   permit={permit}
                   selectedSlug={slug}
-                  onSelect={(s) => { setSlug(s); setZipError(""); }}
+                  onSelect={(s: string) => { setSlug(s); setZipError(""); }}
                 />
                 <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border border-edge rounded-md px-2 py-1 text-[10px] font-semibold text-ink-muted pointer-events-none">
                   {selected ? `Zoomed: ${selected.name} · ${selected.zips[0]}` : "Click a marker or search a ZIP"}
