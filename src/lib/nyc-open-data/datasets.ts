@@ -13,14 +13,14 @@ export interface DatasetDescriptor {
 }
 
 export const DATASETS = {
-  dobApprovedPermits: {
-    id: "rbx6-tga4",
-    name: "DOB NOW: Build — Approved Permits",
+  dobJobApplicationFilings: {
+    id: "w9ak-ipjd",
+    name: "DOB NOW: Build — Job Application Filings",
     domain: "data.cityofnewyork.us",
-    endpoint: "https://data.cityofnewyork.us/resource/rbx6-tga4.json",
+    endpoint: "https://data.cityofnewyork.us/resource/w9ak-ipjd.json",
     description:
-      "Approved building permits filed through DOB NOW. Includes filing dates, approval dates, work types, and geocoded locations.",
-    recentSinceIso: "2024-01-01",
+      "Job application filings submitted through DOB NOW. Includes filing/approval dates, first permit issuance dates, work-type flags, and geocoded locations. The app filters to records that are both approved (approved_date IS NOT NULL) and have an issued permit (first_permit_date IS NOT NULL).",
+    recentSinceIso: "2023-01-01",
   },
 } as const satisfies Record<string, DatasetDescriptor>;
 
