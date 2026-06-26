@@ -37,11 +37,14 @@ function ExplorerPage() {
   const [boroughFilter, setBoroughFilter] = useState<Borough | "All">("All");
   const [permit, setPermit] = useState<PermitType>("Commercial Renovation (Alt-1)");
   const [slug, setSlug] = useState<string>("bushwick");
+  const [zipQuery, setZipQuery] = useState<string>("");
+  const [zipError, setZipError] = useState<string>("");
 
   const estimate = useMemo(() => estimateTimeline(slug, permit), [slug, permit]);
   const friction = useMemo(() => boroughFriction(), []);
   const cityMaxFriction = Math.max(...friction.map((f) => f.days));
   const cityAvg = cityAverage(permit);
+  const selected = useMemo(() => NEIGHBORHOODS.find((n) => n.slug === slug), [slug]);
 
   const visibleNeighborhoods = useMemo(
     () =>
@@ -50,6 +53,29 @@ function ExplorerPage() {
       ),
     [boroughFilter, permit],
   );
+
+  function colorFor(days: number): string {
+    if (days < 40) return "hsl(var(--success))";
+    if (days < 90) return "hsl(var(--warning))";
+    return "hsl(var(--brand))";
+  }
+
+  function handleZipSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const match = findNeighborhoodByZip(zipQuery);
+    if (match) {
+      setSlug(match.slug);
+      setBoroughFilter("All");
+      setZipError("");
+    } else {
+      setZipError(`No coverage for ZIP ${zipQuery}. Try 11206, 10002, 11102…`);
+    }
+  }
+
+  // Zoom viewBox around the selected neighborhood
+  const viewBox = selected
+    ? `${selected.x - 14} ${selected.y - 10} 28 20`
+    : "0 0 100 70";
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
