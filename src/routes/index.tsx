@@ -58,6 +58,10 @@ function ExplorerPage() {
     if (days < 40) return "hsl(var(--success))";
     if (days < 90) return "hsl(var(--warning))";
     return "hsl(var(--brand))";
+  function colorClassFor(days: number): string {
+    if (days < 40) return "text-success";
+    if (days < 90) return "text-warning";
+    return "text-brand";
   }
 
   function handleZipSubmit(e: React.FormEvent) {
