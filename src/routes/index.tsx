@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { SiteNav } from "@/components/site-nav";
+import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
   BOROUGHS,
   NEIGHBORHOODS,
