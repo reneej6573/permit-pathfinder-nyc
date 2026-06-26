@@ -58,22 +58,13 @@ function ExplorerPage() {
     return "text-brand";
   }
 
-  function handleZipSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const match = findNeighborhoodByZip(zipQuery);
-    if (match) {
-      setSlug(match.slug);
-      setBoroughFilter("All");
-      setZipError("");
-    } else {
-      setZipError(`No coverage for ZIP ${zipQuery}. Try 11206, 10002, 11102…`);
-    }
-  }
-
-  // Zoom viewBox around the selected neighborhood
-  const viewBox = selected
-    ? `${selected.x - 14} ${selected.y - 10} 28 20`
-    : "0 0 100 70";
+  const allZipOptions = useMemo(
+    () =>
+      NEIGHBORHOODS.flatMap((n) =>
+        n.zips.map((z) => ({ zip: z, slug: n.slug, label: `${z} — ${n.name}` })),
+      ).sort((a, b) => a.zip.localeCompare(b.zip)),
+    [],
+  );
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
