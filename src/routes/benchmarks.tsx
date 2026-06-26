@@ -142,7 +142,9 @@ function BenchmarksPage() {
 
         <p className="mt-6 text-[11px] text-ink-muted italic">
           Vertical tick on each bar marks the citywide average for the selected permit type. Source:
-          NYC Open Data, dataset <code className="font-mono">rbx6-tga4</code>.
+          NYC Open Data, dataset <code className="font-mono">w9ak-ipjd</code> (DOB NOW Job
+          Application Filings) — limited to filings that are both approved and have an issued
+          permit.
         </p>
       </main>
     </div>

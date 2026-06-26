@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "NYC Permit Path — Explorer" },
       {
         property: "og:description",
-        content: "Live map of NYC permit lag times from the DOB NOW Approved Permits dataset.",
+        content: "Live map of NYC permit lag times from the DOB NOW Job Application Filings dataset.",
       },
     ],
   }),
@@ -81,7 +81,7 @@ function ExplorerPage() {
       <main className="max-w-7xl mx-auto p-6 lg:p-10">
         <header className="mb-12 max-w-2xl">
           <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-3">
-            Live from NYC Open Data · DOB NOW Approved Permits
+            Live from NYC Open Data · DOB NOW Job Application Filings
           </p>
           <h1 className="font-display text-4xl lg:text-5xl font-light leading-tight mb-4 text-balance">
             Anticipate your <span className="font-bold text-brand">opening day</span> with
