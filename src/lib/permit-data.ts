@@ -53,6 +53,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 8,
     primaryBottleneck: "Community Board 4 review cycle",
+    zips: ["11206", "11221", "11237"],
+    x: 62, y: 52,
   },
   {
     slug: "williamsburg",
