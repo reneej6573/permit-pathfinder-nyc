@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import nycHeatmap from "@/assets/nyc-heatmap.jpg";
 import { SiteNav } from "@/components/site-nav";
 import {
   BOROUGHS,
@@ -10,6 +9,7 @@ import {
   boroughFriction,
   cityAverage,
   estimateTimeline,
+  findNeighborhoodByZip,
   type Borough,
   type PermitType,
 } from "@/lib/permit-data";
