@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
 import {
-  NEIGHBORHOODS,
   PERMIT_TYPES,
   estimateTimeline,
   type PermitType,
 } from "@/lib/permit-data";
+import { neighborhoodStatsQuery } from "@/lib/nyc-open-data/queries";
 
 export const Route = createFileRoute("/predictor")({
   head: () => ({
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/predictor")({
       {
         name: "description",
         content:
-          "Forecast your NYC permit approval timeline. Pick a neighborhood and one or more permits to see a launch window with confidence range.",
+          "Forecast NYC permit approval timelines using live DOB NOW data. Pick a ZIP and one or more permits to see your launch window.",
       },
       { property: "og:title", content: "Predictor — NYC Permit Path" },
       {
@@ -24,6 +25,9 @@ export const Route = createFileRoute("/predictor")({
       },
     ],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(neighborhoodStatsQuery);
+  },
   component: PredictorPage,
 });
 
@@ -32,13 +36,11 @@ function formatLaunchWindow(days: number) {
   d.setDate(d.getDate() + days);
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
-
 function addDays(base: Date, days: number) {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
   return d;
 }
-
 function fmtFullDate(d: Date) {
   return d.toLocaleDateString("en-US", {
     weekday: "short",
@@ -47,51 +49,47 @@ function fmtFullDate(d: Date) {
     year: "numeric",
   });
 }
-
 function toInputDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
 function PredictorPage() {
-  const [slug, setSlug] = useState("bushwick");
-  const [selectedPermits, setSelectedPermits] = useState<PermitType[]>([
-    "Full Liquor License (SLA)",
-  ]);
+  const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
+  const neighborhoods = stats.neighborhoods;
+
+  const [slug, setSlug] = useState<string>(neighborhoods[0]?.slug ?? "");
+  const [selectedPermits, setSelectedPermits] = useState<PermitType[]>(["General Construction"]);
 
   const togglePermit = (p: PermitType) => {
     setSelectedPermits((prev) =>
       prev.includes(p)
         ? prev.length === 1
-          ? prev // keep at least one selected
+          ? prev
           : prev.filter((x) => x !== p)
         : [...prev, p],
     );
   };
 
-  // Per-permit estimates
   const perPermit = useMemo(
     () =>
       selectedPermits
-        .map((p) => estimateTimeline(slug, p))
+        .map((p) => estimateTimeline(slug, p, neighborhoods, stats.cityAvgByPermit))
         .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e),
-    [slug, selectedPermits],
+    [slug, selectedPermits, neighborhoods, stats.cityAvgByPermit],
   );
 
-  // Aggregate: filings happen in parallel, so the critical path is the longest permit.
   const aggregate = useMemo(() => {
     if (perPermit.length === 0) return null;
     const critical = perPermit.reduce((a, b) => (b.expected > a.expected ? b : a));
     const min = Math.max(...perPermit.map((e) => e.min));
     const max = Math.max(...perPermit.map((e) => e.max));
-    const expected = critical.expected;
-    const confidence = Math.min(...perPermit.map((e) => e.confidence));
     return {
       neighborhood: critical.neighborhood,
       critical,
-      expected,
+      expected: critical.expected,
       min,
       max,
-      confidence,
+      confidence: Math.min(...perPermit.map((e) => e.confidence)),
     };
   }, [perPermit]);
 
@@ -115,10 +113,9 @@ function PredictorPage() {
     aggregate && targetLaunch ? addDays(targetLaunch, -aggregate.max) : null;
   const deadlineLatest =
     aggregate && targetLaunch ? addDays(targetLaunch, -aggregate.expected) : null;
-  const daysUntilDeadline =
-    deadlineRecommended
-      ? Math.ceil((deadlineRecommended.getTime() - today.getTime()) / 86400000)
-      : null;
+  const daysUntilDeadline = deadlineRecommended
+    ? Math.ceil((deadlineRecommended.getTime() - today.getTime()) / 86400000)
+    : null;
   const deadlinePassed = daysUntilDeadline !== null && daysUntilDeadline < 0;
 
   return (
@@ -128,14 +125,14 @@ function PredictorPage() {
       <main className="max-w-5xl mx-auto p-6 lg:p-10">
         <header className="mb-10 max-w-2xl">
           <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-3">
-            Predictive estimator
+            Predictive estimator · live data
           </p>
           <h1 className="font-display text-4xl font-light leading-tight mb-4 text-balance">
             Forecast your <span className="font-bold">launch window</span> in two clicks.
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
-            Estimates use neighborhood-specific medians from the last 24 months of filings,
-            adjusted for the 90-day trend at the responsible community board.
+            Estimates are computed from the NYC Open Data DOB NOW Approved Permits dataset
+            (avg days from approval to issuance per ZIP), adjusted for the 90-day trend.
           </p>
         </header>
 
@@ -143,16 +140,16 @@ function PredictorPage() {
           <div className="lg:col-span-2 bg-background border border-edge rounded-xl p-6 space-y-5">
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
-                Neighborhood
+                Target ZIP
               </label>
               <select
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
               >
-                {NEIGHBORHOODS.map((n) => (
+                {neighborhoods.map((n) => (
                   <option key={n.slug} value={n.slug}>
-                    {n.name}, {n.borough}
+                    {n.zips[0]} · {n.name}, {n.borough}
                   </option>
                 ))}
               </select>
@@ -228,8 +225,8 @@ function PredictorPage() {
                         {selectedPermits.length > 1 ? "s" : ""})
                       </p>
                       <p className="text-xs opacity-80 mt-1">
-                        {aggregate.neighborhood.name} • critical path:{" "}
-                        {aggregate.critical.permit}
+                        {aggregate.neighborhood.name} · ZIP {aggregate.neighborhood.zips[0]} —
+                        critical path: {aggregate.critical.permit}
                       </p>
                     </div>
                     <span className="text-[10px] font-mono bg-white/10 px-2 py-1 rounded-sm">
@@ -320,9 +317,7 @@ function PredictorPage() {
                               <div className="h-1.5 bg-surface rounded-full overflow-hidden">
                                 <div
                                   className={
-                                    isCritical
-                                      ? "h-full bg-brand"
-                                      : "h-full bg-foreground/40"
+                                    isCritical ? "h-full bg-brand" : "h-full bg-foreground/40"
                                   }
                                   style={{ width: `${pct}%` }}
                                 />
@@ -376,14 +371,12 @@ function PredictorPage() {
                       File by {fmtFullDate(deadlineRecommended)}
                     </p>
                     <p className="text-xs text-ink-muted mt-2">
-                      Latest safe date: {fmtFullDate(deadlineLatest)} (no buffer for
-                      delays).
+                      Latest safe date: {fmtFullDate(deadlineLatest)} (no buffer for delays).
                     </p>
                     {deadlinePassed && (
                       <p className="text-xs font-semibold text-brand mt-3">
-                        Heads up — your target launch is sooner than the typical wait
-                        for these permits. Consider filing immediately or pushing the
-                        launch date.
+                        Heads up — your target launch is sooner than the typical wait for these
+                        permits. Consider filing immediately or pushing the launch date.
                       </p>
                     )}
                   </div>

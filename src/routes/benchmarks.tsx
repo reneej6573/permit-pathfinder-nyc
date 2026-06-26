@@ -1,12 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
-import {
-  NEIGHBORHOODS,
-  PERMIT_TYPES,
-  cityAverage,
-  type PermitType,
-} from "@/lib/permit-data";
+import { PERMIT_TYPES, type PermitType } from "@/lib/permit-data";
+import { neighborhoodStatsQuery } from "@/lib/nyc-open-data/queries";
 
 export const Route = createFileRoute("/benchmarks")({
   head: () => ({
@@ -15,26 +12,30 @@ export const Route = createFileRoute("/benchmarks")({
       {
         name: "description",
         content:
-          "Side-by-side benchmarks of NYC permit approval times by neighborhood and permit type.",
+          "Side-by-side benchmarks of NYC permit approval times by ZIP and permit type, sourced from NYC Open Data.",
       },
       { property: "og:title", content: "Borough Benchmarks — NYC Permit Path" },
       {
         property: "og:description",
-        content: "Compare permit approval times across NYC neighborhoods at a glance.",
+        content: "Compare permit approval times across NYC ZIPs and boroughs at a glance.",
       },
     ],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(neighborhoodStatsQuery);
+  },
   component: BenchmarksPage,
 });
 
 function BenchmarksPage() {
-  const [permit, setPermit] = useState<PermitType>("Commercial Renovation (Alt-1)");
-  const avg = cityAverage(permit);
+  const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
+  const [permit, setPermit] = useState<PermitType>("General Construction");
+  const avg = stats.cityAvgByPermit[permit] ?? 0;
   const sorted = useMemo(
-    () => [...NEIGHBORHOODS].sort((a, b) => a.days[permit] - b.days[permit]),
-    [permit],
+    () => [...stats.neighborhoods].sort((a, b) => a.days[permit] - b.days[permit]).slice(0, 40),
+    [stats.neighborhoods, permit],
   );
-  const max = Math.max(...sorted.map((n) => n.days[permit]));
+  const max = Math.max(1, ...sorted.map((n) => n.days[permit]));
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
@@ -46,11 +47,11 @@ function BenchmarksPage() {
             Borough benchmarks
           </p>
           <h1 className="font-display text-4xl font-light leading-tight mb-4 text-balance">
-            Compare neighborhoods <span className="font-bold">side by side.</span>
+            Compare ZIPs <span className="font-bold">side by side.</span>
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
-            Median days from application submission to approval. Switch permit types to see how
-            different bureaucratic paths reshape the map.
+            Avg days from approval to permit issuance, computed live from the NYC DOB NOW dataset.
+            Switch permit types to see how different bureaucratic paths reshape the map.
           </p>
         </header>
 
@@ -77,11 +78,9 @@ function BenchmarksPage() {
 
         <section className="bg-background border border-edge rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-edge flex items-center justify-between">
-            <h2 className="font-display font-bold text-sm uppercase tracking-wider">
-              {permit}
-            </h2>
+            <h2 className="font-display font-bold text-sm uppercase tracking-wider">{permit}</h2>
             <p className="text-xs text-ink-muted">
-              City median:{" "}
+              City average:{" "}
               <span className="font-display font-bold text-foreground">{avg} days</span>
             </p>
           </div>
@@ -89,7 +88,7 @@ function BenchmarksPage() {
           <ul>
             {sorted.map((n) => {
               const days = n.days[permit];
-              const delta = Math.round(((days - avg) / avg) * 100);
+              const delta = avg > 0 ? Math.round(((days - avg) / avg) * 100) : 0;
               const widthPct = (days / max) * 100;
               return (
                 <li
@@ -98,7 +97,9 @@ function BenchmarksPage() {
                 >
                   <div className="col-span-12 sm:col-span-3 min-w-0">
                     <p className="font-semibold text-sm truncate">{n.name}</p>
-                    <p className="text-xs text-ink-muted">{n.borough}</p>
+                    <p className="text-xs text-ink-muted">
+                      {n.borough} · ZIP {n.zips[0]}
+                    </p>
                   </div>
                   <div className="col-span-8 sm:col-span-6">
                     <div className="relative h-2 bg-surface rounded-full overflow-hidden">
@@ -130,9 +131,7 @@ function BenchmarksPage() {
                             : "text-[10px] uppercase tracking-wider text-ink-muted font-semibold"
                       }
                     >
-                      {delta === 0
-                        ? "On city avg"
-                        : `${delta > 0 ? "+" : ""}${delta}% vs city`}
+                      {delta === 0 ? "On city avg" : `${delta > 0 ? "+" : ""}${delta}% vs city`}
                     </p>
                   </div>
                 </li>
@@ -142,7 +141,8 @@ function BenchmarksPage() {
         </section>
 
         <p className="mt-6 text-[11px] text-ink-muted italic">
-          Vertical tick on each bar marks the citywide median for the selected permit type.
+          Vertical tick on each bar marks the citywide average for the selected permit type. Source:
+          NYC Open Data, dataset <code className="font-mono">rbx6-tga4</code>.
         </p>
       </main>
     </div>
