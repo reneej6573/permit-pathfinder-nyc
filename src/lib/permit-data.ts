@@ -71,6 +71,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 12,
     primaryBottleneck: "DOB plan examiner backlog",
+    zips: ["11211", "11222", "11249"],
+    x: 60, y: 47,
   },
   {
     slug: "astoria",
