@@ -154,77 +154,16 @@ function ExplorerPage() {
               )}
 
               <div className="relative w-full aspect-[16/9] bg-surface overflow-hidden">
-                <svg
-                  viewBox={viewBox}
-                  className="absolute inset-0 w-full h-full transition-[viewBox] duration-500"
-                  preserveAspectRatio="xMidYMid meet"
-                  role="img"
-                  aria-label="Interactive NYC permit lag map"
-                >
-                  {/* stylized borough background blobs */}
-                  <g opacity="0.35">
-                    <ellipse cx="52" cy="42" rx="6" ry="18" className="fill-edge" />
-                    <ellipse cx="62" cy="55" rx="14" ry="12" className="fill-edge" />
-                    <ellipse cx="74" cy="40" rx="14" ry="9" className="fill-edge" />
-                    <ellipse cx="52" cy="22" rx="10" ry="8" className="fill-edge" />
-                    <ellipse cx="32" cy="70" rx="8" ry="7" className="fill-edge" />
-                  </g>
-                  {NEIGHBORHOODS.map((n) => {
-                    const days = n.days[permit];
-                    const dimmed = boroughFilter !== "All" && n.borough !== boroughFilter;
-                    const isSel = n.slug === slug;
-                    const r = isSel ? 3.6 : 2.6;
-                    return (
-                      <g
-                        key={n.slug}
-                        onClick={() => { setSlug(n.slug); setZipError(""); }}
-                        className="cursor-pointer"
-                        opacity={dimmed ? 0.25 : 1}
-                      >
-                        <circle
-                          cx={n.x}
-                          cy={n.y}
-                          r={r + 2}
-                          className={`${colorClassFor(days)} opacity-25`}
-                          fill="currentColor"
-                        />
-                        <circle
-                          cx={n.x}
-                          cy={n.y}
-                          r={r}
-                          className={colorClassFor(days)}
-                          fill="currentColor"
-                          stroke={isSel ? "white" : "none"}
-                          strokeWidth={isSel ? 0.6 : 0}
-                        />
-                        {(isSel || selected === undefined) && (
-                          <text
-                            x={n.x}
-                            y={n.y - r - 1.5}
-                            textAnchor="middle"
-                            className="fill-foreground font-display"
-                            style={{ fontSize: selected ? 2 : 2.6, fontWeight: 600 }}
-                          >
-                            {n.name}
-                          </text>
-                        )}
-                        {isSel && (
-                          <text
-                            x={n.x}
-                            y={n.y + r + 3}
-                            textAnchor="middle"
-                            className="fill-ink-muted"
-                            style={{ fontSize: 1.8 }}
-                          >
-                            {days}d · {n.zips[0]}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })}
-                </svg>
-                <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border border-edge rounded-md px-2 py-1 text-[10px] font-semibold text-ink-muted">
-                  {selected ? `Zoomed: ${selected.name}` : "Click a neighborhood to zoom"}
+                <NycGoogleMap
+                  neighborhoods={NEIGHBORHOODS.filter(
+                    (n) => boroughFilter === "All" || n.borough === boroughFilter,
+                  )}
+                  permit={permit}
+                  selectedSlug={slug}
+                  onSelect={(s) => { setSlug(s); setZipError(""); }}
+                />
+                <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border border-edge rounded-md px-2 py-1 text-[10px] font-semibold text-ink-muted pointer-events-none">
+                  {selected ? `Zoomed: ${selected.name} · ${selected.zips[0]}` : "Click a marker or search a ZIP"}
                 </div>
                 <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur border border-edge rounded-md px-3 py-2 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1">
