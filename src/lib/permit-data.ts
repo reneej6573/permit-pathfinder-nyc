@@ -1,272 +1,82 @@
-export type Borough = "Manhattan" | "Brooklyn" | "Queens" | "Bronx" | "Staten Island";
+// Thin compatibility / helper layer that re-exports the live dataset's types
+// and provides pure aggregations the UI components use. All data is loaded
+// from NYC Open Data via `./nyc-open-data/queries.ts` — there is no static
+// neighborhood data in this file.
 
-export type PermitType =
-  | "Commercial Renovation (Alt-1)"
-  | "New Construction"
-  | "Sidewalk Cafe Permit"
-  | "Full Liquor License (SLA)"
-  | "Health Department Permit"
-  | "Alt-2 Minor Alteration";
+export {
+  PERMIT_TYPES,
+  BOROUGHS,
+  type PermitType,
+  type Borough,
+  type Neighborhood,
+  type RecentApproval,
+} from "./nyc-open-data/dob-permits.functions";
 
-export interface Neighborhood {
-  slug: string;
-  name: string;
-  borough: Borough;
-  code: string;
-  // median days to approval by permit type
-  days: Record<PermitType, number>;
-  trend: number; // % change last 90 days (positive = slower)
-  primaryBottleneck: string;
-  zips: string[];
-  // approximate position on a 100x100 stylized NYC grid (x = east, y = south)
-  x: number;
-  y: number;
-  lat: number;
-  lng: number;
-}
+import type { Borough, Neighborhood, PermitType } from "./nyc-open-data/dob-permits.functions";
+import { BOROUGHS } from "./nyc-open-data/dob-permits.functions";
 
-export function findNeighborhoodByZip(zip: string): Neighborhood | undefined {
+export function findNeighborhoodByZip(zip: string, list: Neighborhood[]): Neighborhood | undefined {
   const z = zip.trim();
-  return NEIGHBORHOODS.find((n) => n.zips.includes(z));
+  return list.find((n) => n.zips.includes(z));
 }
 
-export const PERMIT_TYPES: PermitType[] = [
-  "Commercial Renovation (Alt-1)",
-  "New Construction",
-  "Sidewalk Cafe Permit",
-  "Full Liquor License (SLA)",
-  "Health Department Permit",
-  "Alt-2 Minor Alteration",
-];
-
-export const NEIGHBORHOODS: Neighborhood[] = [
-  {
-    slug: "bushwick",
-    name: "Bushwick",
-    borough: "Brooklyn",
-    code: "BK",
-    days: {
-      "Commercial Renovation (Alt-1)": 52,
-      "New Construction": 198,
-      "Sidewalk Cafe Permit": 84,
-      "Full Liquor License (SLA)": 142,
-      "Health Department Permit": 38,
-      "Alt-2 Minor Alteration": 41,
-    },
-    trend: 8,
-    primaryBottleneck: "Community Board 4 review cycle",
-    zips: ["11206", "11221", "11237"],
-    x: 62, y: 52,
-    lat: 40.6943, lng: -73.9213,
-  },
-  {
-    slug: "williamsburg",
-    name: "Williamsburg",
-    borough: "Brooklyn",
-    code: "BK",
-    days: {
-      "Commercial Renovation (Alt-1)": 58,
-      "New Construction": 215,
-      "Sidewalk Cafe Permit": 72,
-      "Full Liquor License (SLA)": 168,
-      "Health Department Permit": 35,
-      "Alt-2 Minor Alteration": 44,
-    },
-    trend: 12,
-    primaryBottleneck: "DOB plan examiner backlog",
-    zips: ["11211", "11222", "11249"],
-    x: 60, y: 47,
-    lat: 40.7081, lng: -73.9571,
-  },
-  {
-    slug: "astoria",
-    name: "Astoria",
-    borough: "Queens",
-    code: "QN",
-    days: {
-      "Commercial Renovation (Alt-1)": 29,
-      "New Construction": 162,
-      "Sidewalk Cafe Permit": 64,
-      "Full Liquor License (SLA)": 118,
-      "Health Department Permit": 28,
-      "Alt-2 Minor Alteration": 31,
-    },
-    trend: 0,
-    primaryBottleneck: "Fire Department site inspection",
-    zips: ["11102","11103","11106"],
-    x: 70, y: 40,
-    lat: 40.772, lng: -73.9301,
-  },
-  {
-    slug: "lower-east-side",
-    name: "Lower East Side",
-    borough: "Manhattan",
-    code: "MN",
-    days: {
-      "Commercial Renovation (Alt-1)": 89,
-      "New Construction": 245,
-      "Sidewalk Cafe Permit": 96,
-      "Full Liquor License (SLA)": 188,
-      "Health Department Permit": 42,
-      "Alt-2 Minor Alteration": 67,
-    },
-    trend: 6,
-    primaryBottleneck: "Community Board 3 approval window",
-    zips: ["10002","10003"],
-    x: 52, y: 45,
-    lat: 40.715, lng: -73.9843,
-  },
-  {
-    slug: "harlem",
-    name: "Harlem",
-    borough: "Manhattan",
-    code: "MN",
-    days: {
-      "Commercial Renovation (Alt-1)": 38,
-      "New Construction": 178,
-      "Sidewalk Cafe Permit": 70,
-      "Full Liquor License (SLA)": 124,
-      "Health Department Permit": 30,
-      "Alt-2 Minor Alteration": 36,
-    },
-    trend: -4,
-    primaryBottleneck: "Landmark Preservation review (when applicable)",
-    zips: ["10026","10027","10030"],
-    x: 50, y: 30,
-    lat: 40.8116, lng: -73.9465,
-  },
-  {
-    slug: "sunset-park",
-    name: "Sunset Park",
-    borough: "Brooklyn",
-    code: "BK",
-    days: {
-      "Commercial Renovation (Alt-1)": 114,
-      "New Construction": 226,
-      "Sidewalk Cafe Permit": 102,
-      "Full Liquor License (SLA)": 196,
-      "Health Department Permit": 48,
-      "Alt-2 Minor Alteration": 78,
-    },
-    trend: 24,
-    primaryBottleneck: "Health Department inspection queue",
-    zips: ["11220","11232"],
-    x: 55, y: 62,
-    lat: 40.6453, lng: -74.0107,
-  },
-  {
-    slug: "flatbush",
-    name: "Flatbush",
-    borough: "Brooklyn",
-    code: "BK",
-    days: {
-      "Commercial Renovation (Alt-1)": 74,
-      "New Construction": 188,
-      "Sidewalk Cafe Permit": 80,
-      "Full Liquor License (SLA)": 156,
-      "Health Department Permit": 36,
-      "Alt-2 Minor Alteration": 49,
-    },
-    trend: -4,
-    primaryBottleneck: "DOB plan examiner backlog",
-    zips: ["11226","11210"],
-    x: 58, y: 68,
-    lat: 40.6409, lng: -73.9624,
-  },
-  {
-    slug: "south-bronx",
-    name: "South Bronx",
-    borough: "Bronx",
-    code: "BX",
-    days: {
-      "Commercial Renovation (Alt-1)": 46,
-      "New Construction": 172,
-      "Sidewalk Cafe Permit": 68,
-      "Full Liquor License (SLA)": 134,
-      "Health Department Permit": 32,
-      "Alt-2 Minor Alteration": 38,
-    },
-    trend: -2,
-    primaryBottleneck: "Document intake processing",
-    zips: ["10451","10454","10455"],
-    x: 55, y: 22,
-    lat: 40.8166, lng: -73.9173,
-  },
-  {
-    slug: "st-george",
-    name: "St. George",
-    borough: "Staten Island",
-    code: "SI",
-    days: {
-      "Commercial Renovation (Alt-1)": 31,
-      "New Construction": 142,
-      "Sidewalk Cafe Permit": 58,
-      "Full Liquor License (SLA)": 108,
-      "Health Department Permit": 26,
-      "Alt-2 Minor Alteration": 28,
-    },
-    trend: 1,
-    primaryBottleneck: "Borough President sign-off",
-    zips: ["10301","10304"],
-    x: 32, y: 72,
-    lat: 40.6437, lng: -74.0779,
-  },
-];
-
-export const BOROUGHS: Borough[] = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
-
-export interface RecentApproval {
-  neighborhood: string;
-  code: string;
-  use: string;
-  permit: string;
-  days: number;
-  deltaPct: number; // negative = faster than avg
+export function cityAverage(
+  permit: PermitType,
+  neighborhoods: Neighborhood[],
+  fallbackMap?: Record<PermitType, number>,
+): number {
+  if (neighborhoods.length === 0) return fallbackMap?.[permit] ?? 0;
+  const total = neighborhoods.reduce((s, n) => s + (n.days[permit] ?? 0), 0);
+  return Math.round(total / neighborhoods.length);
 }
 
-export const RECENT_APPROVALS: RecentApproval[] = [
-  { neighborhood: "Bushwick", code: "BK", use: "New Restaurant", permit: "Full Liquor License (SLA)", days: 142, deltaPct: -12 },
-  { neighborhood: "Lower East Side", code: "MN", use: "Retail Renovation", permit: "Alt-2 Minor Alteration", days: 89, deltaPct: 0 },
-  { neighborhood: "Astoria", code: "QN", use: "Café Buildout", permit: "Sidewalk Cafe Permit", days: 61, deltaPct: -5 },
-  { neighborhood: "Sunset Park", code: "BK", use: "Mixed-Use Tenant Fit", permit: "Commercial Renovation (Alt-1)", days: 121, deltaPct: 6 },
-  { neighborhood: "Harlem", code: "MN", use: "Boutique Fitness", permit: "Commercial Renovation (Alt-1)", days: 42, deltaPct: -8 },
-];
-
-// Borough rollups (median Alt-1) for the Friction Index
-export function boroughFriction(): { borough: Borough; days: number }[] {
-  const groups: Record<string, number[]> = {};
-  NEIGHBORHOODS.forEach((n) => {
-    (groups[n.borough] ||= []).push(n.days["Commercial Renovation (Alt-1)"]);
-  });
-  const rollup = BOROUGHS.map((b) => {
-    const arr = groups[b] ?? [0];
-    const median = arr.sort((a, b) => a - b)[Math.floor(arr.length / 2)];
+export function boroughFriction(
+  neighborhoods: Neighborhood[],
+  permit: PermitType = "General Construction",
+): { borough: Borough; days: number }[] {
+  const groups = new Map<Borough, number[]>();
+  for (const n of neighborhoods) {
+    const arr = groups.get(n.borough) ?? [];
+    arr.push(n.days[permit]);
+    groups.set(n.borough, arr);
+  }
+  return BOROUGHS.map((b) => {
+    const arr = (groups.get(b) ?? [0]).slice().sort((a, c) => a - c);
+    const median = arr[Math.floor(arr.length / 2)] ?? 0;
     return { borough: b, days: median };
-  });
-  return rollup.sort((a, b) => b.days - a.days);
+  }).sort((a, b) => b.days - a.days);
 }
 
-export function cityAverage(permit: PermitType): number {
-  const total = NEIGHBORHOODS.reduce((s, n) => s + n.days[permit], 0);
-  return Math.round(total / NEIGHBORHOODS.length);
+export interface TimelineEstimate {
+  neighborhood: Neighborhood;
+  permit: PermitType;
+  expected: number;
+  min: number;
+  max: number;
+  cityAvg: number;
+  deltaPct: number;
+  confidence: number;
 }
 
-// Predictive estimate based on neighborhood + permit + trend.
-// Returns days plus a confidence window (±).
-export function estimateTimeline(slug: string, permit: PermitType) {
-  const n = NEIGHBORHOODS.find((x) => x.slug === slug);
+export function estimateTimeline(
+  slug: string,
+  permit: PermitType,
+  neighborhoods: Neighborhood[],
+  cityAvgByPermit: Record<PermitType, number>,
+): TimelineEstimate | null {
+  const n = neighborhoods.find((x) => x.slug === slug);
   if (!n) return null;
   const base = n.days[permit];
   const trendAdj = Math.round(base * (n.trend / 100) * 0.5);
-  const expected = base + trendAdj;
-  const variance = Math.round(expected * 0.18);
-  const cityAvg = cityAverage(permit);
-  const delta = Math.round(((expected - cityAvg) / cityAvg) * 100);
+  const expected = Math.max(1, base + trendAdj);
+  const variance = Math.max(1, Math.round(expected * 0.18));
+  const cityAvg = cityAvgByPermit[permit] ?? base;
+  const delta = cityAvg > 0 ? Math.round(((expected - cityAvg) / cityAvg) * 100) : 0;
   return {
     neighborhood: n,
     permit,
     expected,
-    min: expected - variance,
+    min: Math.max(1, expected - variance),
     max: expected + variance,
     cityAvg,
     deltaPct: delta,
