@@ -33,10 +33,55 @@ function formatLaunchWindow(days: number) {
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function fmtFullDate(d: Date) {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function toInputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 function PredictorPage() {
   const [slug, setSlug] = useState("bushwick");
   const [permit, setPermit] = useState<PermitType>("Full Liquor License (SLA)");
   const estimate = useMemo(() => estimateTimeline(slug, permit), [slug, permit]);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const defaultLaunch = useMemo(
+    () => toInputDate(addDays(today, (estimate?.expected ?? 60) + 30)),
+    [today, estimate?.expected],
+  );
+  const [launchDate, setLaunchDate] = useState<string>(defaultLaunch);
+
+  const targetLaunch = launchDate ? new Date(launchDate + "T00:00:00") : null;
+  const approvalEarliest = estimate ? addDays(today, estimate.min) : null;
+  const approvalExpected = estimate ? addDays(today, estimate.expected) : null;
+  const approvalLatest = estimate ? addDays(today, estimate.max) : null;
+
+  const deadlineRecommended =
+    estimate && targetLaunch ? addDays(targetLaunch, -estimate.max) : null;
+  const deadlineLatest =
+    estimate && targetLaunch ? addDays(targetLaunch, -estimate.expected) : null;
+  const daysUntilDeadline =
+    deadlineRecommended
+      ? Math.ceil((deadlineRecommended.getTime() - today.getTime()) / 86400000)
+      : null;
+  const deadlinePassed = daysUntilDeadline !== null && daysUntilDeadline < 0;
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
@@ -93,6 +138,21 @@ function PredictorPage() {
                   </button>
                 ))}
               </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
+                Target Launch Date
+              </label>
+              <input
+                type="date"
+                value={launchDate}
+                min={toInputDate(today)}
+                onChange={(e) => setLaunchDate(e.target.value)}
+                className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+              <p className="text-[11px] text-ink-muted mt-1.5">
+                When you'd like to open. We'll work backward to your application deadline.
+              </p>
             </div>
           </div>
 
@@ -160,6 +220,61 @@ function PredictorPage() {
                     </div>
                   </div>
                 </div>
+
+                {approvalExpected && approvalEarliest && approvalLatest && (
+                  <div className="bg-background border border-edge rounded-xl p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                      Estimated approval date
+                    </p>
+                    <p className="font-display text-3xl font-bold mt-2 leading-tight">
+                      {fmtFullDate(approvalExpected)}
+                    </p>
+                    <p className="text-xs text-ink-muted mt-2">
+                      If you file today. Range: {fmtFullDate(approvalEarliest)} →{" "}
+                      {fmtFullDate(approvalLatest)}.
+                    </p>
+                  </div>
+                )}
+
+                {targetLaunch && deadlineRecommended && deadlineLatest && (
+                  <div
+                    className={
+                      deadlinePassed
+                        ? "border-2 border-brand bg-brand/5 rounded-xl p-6"
+                        : "border-2 border-foreground bg-background rounded-xl p-6"
+                    }
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                          Deadline to apply
+                        </p>
+                        <p className="text-xs text-ink-muted mt-1">
+                          To open by {fmtFullDate(targetLaunch)}
+                        </p>
+                      </div>
+                      {!deadlinePassed && daysUntilDeadline !== null && (
+                        <span className="text-[10px] font-mono bg-foreground text-background px-2 py-1 rounded-sm whitespace-nowrap">
+                          {daysUntilDeadline} days left
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-display text-3xl font-bold mt-3 leading-tight">
+                      File by {fmtFullDate(deadlineRecommended)}
+                    </p>
+                    <p className="text-xs text-ink-muted mt-2">
+                      Latest safe date: {fmtFullDate(deadlineLatest)} (no buffer for
+                      delays).
+                    </p>
+                    {deadlinePassed && (
+                      <p className="text-xs font-semibold text-brand mt-3">
+                        Heads up — your target launch is sooner than the typical wait
+                        for this permit. Consider filing immediately or pushing the
+                        launch date.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="bg-background border border-edge rounded-xl p-5">
