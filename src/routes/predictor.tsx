@@ -139,6 +139,21 @@ function PredictorPage() {
                 ))}
               </div>
             </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
+                Target Launch Date
+              </label>
+              <input
+                type="date"
+                value={launchDate}
+                min={toInputDate(today)}
+                onChange={(e) => setLaunchDate(e.target.value)}
+                className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+              />
+              <p className="text-[11px] text-ink-muted mt-1.5">
+                When you'd like to open. We'll work backward to your application deadline.
+              </p>
+            </div>
           </div>
 
           <div className="lg:col-span-3 space-y-6">
