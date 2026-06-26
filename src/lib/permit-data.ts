@@ -17,6 +17,15 @@ export interface Neighborhood {
   days: Record<PermitType, number>;
   trend: number; // % change last 90 days (positive = slower)
   primaryBottleneck: string;
+  zips: string[];
+  // approximate position on a 100x100 stylized NYC grid (x = east, y = south)
+  x: number;
+  y: number;
+}
+
+export function findNeighborhoodByZip(zip: string): Neighborhood | undefined {
+  const z = zip.trim();
+  return NEIGHBORHOODS.find((n) => n.zips.includes(z));
 }
 
 export const PERMIT_TYPES: PermitType[] = [
@@ -44,6 +53,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 8,
     primaryBottleneck: "Community Board 4 review cycle",
+    zips: ["11206", "11221", "11237"],
+    x: 62, y: 52,
   },
   {
     slug: "williamsburg",
@@ -60,6 +71,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 12,
     primaryBottleneck: "DOB plan examiner backlog",
+    zips: ["11211", "11222", "11249"],
+    x: 60, y: 47,
   },
   {
     slug: "astoria",
@@ -76,6 +89,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 0,
     primaryBottleneck: "Fire Department site inspection",
+    zips: ["11102","11103","11106"],
+    x: 70, y: 40,
   },
   {
     slug: "lower-east-side",
@@ -92,6 +107,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 6,
     primaryBottleneck: "Community Board 3 approval window",
+    zips: ["10002","10003"],
+    x: 52, y: 45,
   },
   {
     slug: "harlem",
@@ -108,6 +125,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: -4,
     primaryBottleneck: "Landmark Preservation review (when applicable)",
+    zips: ["10026","10027","10030"],
+    x: 50, y: 30,
   },
   {
     slug: "sunset-park",
@@ -124,6 +143,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 24,
     primaryBottleneck: "Health Department inspection queue",
+    zips: ["11220","11232"],
+    x: 55, y: 62,
   },
   {
     slug: "flatbush",
@@ -140,6 +161,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: -4,
     primaryBottleneck: "DOB plan examiner backlog",
+    zips: ["11226","11210"],
+    x: 58, y: 68,
   },
   {
     slug: "south-bronx",
@@ -156,6 +179,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: -2,
     primaryBottleneck: "Document intake processing",
+    zips: ["10451","10454","10455"],
+    x: 55, y: 22,
   },
   {
     slug: "st-george",
@@ -172,6 +197,8 @@ export const NEIGHBORHOODS: Neighborhood[] = [
     },
     trend: 1,
     primaryBottleneck: "Borough President sign-off",
+    zips: ["10301","10304"],
+    x: 32, y: 72,
   },
 ];
 
