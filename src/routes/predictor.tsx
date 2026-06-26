@@ -15,7 +15,7 @@ export const Route = createFileRoute("/predictor")({
       {
         name: "description",
         content:
-          "Forecast your NYC permit approval timeline. Pick a neighborhood and permit type to see a launch window with confidence range.",
+          "Forecast your NYC permit approval timeline. Pick a neighborhood and one or more permits to see a launch window with confidence range.",
       },
       { property: "og:title", content: "Predictor — NYC Permit Path" },
       {
@@ -54,8 +54,46 @@ function toInputDate(d: Date) {
 
 function PredictorPage() {
   const [slug, setSlug] = useState("bushwick");
-  const [permit, setPermit] = useState<PermitType>("Full Liquor License (SLA)");
-  const estimate = useMemo(() => estimateTimeline(slug, permit), [slug, permit]);
+  const [selectedPermits, setSelectedPermits] = useState<PermitType[]>([
+    "Full Liquor License (SLA)",
+  ]);
+
+  const togglePermit = (p: PermitType) => {
+    setSelectedPermits((prev) =>
+      prev.includes(p)
+        ? prev.length === 1
+          ? prev // keep at least one selected
+          : prev.filter((x) => x !== p)
+        : [...prev, p],
+    );
+  };
+
+  // Per-permit estimates
+  const perPermit = useMemo(
+    () =>
+      selectedPermits
+        .map((p) => estimateTimeline(slug, p))
+        .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e),
+    [slug, selectedPermits],
+  );
+
+  // Aggregate: filings happen in parallel, so the critical path is the longest permit.
+  const aggregate = useMemo(() => {
+    if (perPermit.length === 0) return null;
+    const critical = perPermit.reduce((a, b) => (b.expected > a.expected ? b : a));
+    const min = Math.max(...perPermit.map((e) => e.min));
+    const max = Math.max(...perPermit.map((e) => e.max));
+    const expected = critical.expected;
+    const confidence = Math.min(...perPermit.map((e) => e.confidence));
+    return {
+      neighborhood: critical.neighborhood,
+      critical,
+      expected,
+      min,
+      max,
+      confidence,
+    };
+  }, [perPermit]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -63,20 +101,20 @@ function PredictorPage() {
     return d;
   }, []);
   const defaultLaunch = useMemo(
-    () => toInputDate(addDays(today, (estimate?.expected ?? 60) + 30)),
-    [today, estimate?.expected],
+    () => toInputDate(addDays(today, (aggregate?.expected ?? 60) + 30)),
+    [today, aggregate?.expected],
   );
   const [launchDate, setLaunchDate] = useState<string>(defaultLaunch);
 
   const targetLaunch = launchDate ? new Date(launchDate + "T00:00:00") : null;
-  const approvalEarliest = estimate ? addDays(today, estimate.min) : null;
-  const approvalExpected = estimate ? addDays(today, estimate.expected) : null;
-  const approvalLatest = estimate ? addDays(today, estimate.max) : null;
+  const approvalEarliest = aggregate ? addDays(today, aggregate.min) : null;
+  const approvalExpected = aggregate ? addDays(today, aggregate.expected) : null;
+  const approvalLatest = aggregate ? addDays(today, aggregate.max) : null;
 
   const deadlineRecommended =
-    estimate && targetLaunch ? addDays(targetLaunch, -estimate.max) : null;
+    aggregate && targetLaunch ? addDays(targetLaunch, -aggregate.max) : null;
   const deadlineLatest =
-    estimate && targetLaunch ? addDays(targetLaunch, -estimate.expected) : null;
+    aggregate && targetLaunch ? addDays(targetLaunch, -aggregate.expected) : null;
   const daysUntilDeadline =
     deadlineRecommended
       ? Math.ceil((deadlineRecommended.getTime() - today.getTime()) / 86400000)
@@ -120,24 +158,47 @@ function PredictorPage() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
-                Permit Type
-              </label>
-              <div className="grid grid-cols-1 gap-2">
-                {PERMIT_TYPES.map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPermit(p)}
-                    className={
-                      permit === p
-                        ? "text-left px-3 py-2.5 border-2 border-brand bg-brand/5 rounded-md text-xs font-bold text-brand"
-                        : "text-left px-3 py-2.5 border border-edge bg-background hover:border-foreground transition-colors rounded-md text-xs font-semibold text-ink-muted"
-                    }
-                  >
-                    {p}
-                  </button>
-                ))}
+              <div className="flex items-baseline justify-between mb-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                  Permits (select all you need)
+                </label>
+                <span className="text-[10px] font-mono text-ink-muted">
+                  {selectedPermits.length} selected
+                </span>
               </div>
+              <div className="grid grid-cols-1 gap-2">
+                {PERMIT_TYPES.map((p) => {
+                  const checked = selectedPermits.includes(p);
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      aria-pressed={checked}
+                      onClick={() => togglePermit(p)}
+                      className={
+                        checked
+                          ? "flex items-center gap-2.5 text-left px-3 py-2.5 border-2 border-brand bg-brand/5 rounded-md text-xs font-bold text-brand"
+                          : "flex items-center gap-2.5 text-left px-3 py-2.5 border border-edge bg-background hover:border-foreground transition-colors rounded-md text-xs font-semibold text-ink-muted"
+                      }
+                    >
+                      <span
+                        className={
+                          checked
+                            ? "flex h-4 w-4 items-center justify-center rounded-sm bg-brand text-background text-[10px] font-bold"
+                            : "flex h-4 w-4 items-center justify-center rounded-sm border border-edge"
+                        }
+                        aria-hidden
+                      >
+                        {checked ? "✓" : ""}
+                      </span>
+                      <span className="flex-1">{p}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-ink-muted mt-2">
+                Filings run in parallel — the longest permit drives your launch date.
+              </p>
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
@@ -157,24 +218,26 @@ function PredictorPage() {
           </div>
 
           <div className="lg:col-span-3 space-y-6">
-            {estimate && (
+            {aggregate && (
               <>
                 <div className="bg-foreground text-background rounded-xl p-8">
                   <div className="flex items-start justify-between mb-6">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                        Projected wait
+                        Projected wait ({selectedPermits.length} permit
+                        {selectedPermits.length > 1 ? "s" : ""})
                       </p>
                       <p className="text-xs opacity-80 mt-1">
-                        {estimate.neighborhood.name} • {estimate.permit}
+                        {aggregate.neighborhood.name} • critical path:{" "}
+                        {aggregate.critical.permit}
                       </p>
                     </div>
                     <span className="text-[10px] font-mono bg-white/10 px-2 py-1 rounded-sm">
-                      {estimate.confidence}% confidence
+                      {aggregate.confidence}% confidence
                     </span>
                   </div>
                   <div className="font-display text-6xl font-bold tracking-tight leading-none">
-                    {estimate.expected}
+                    {aggregate.expected}
                     <span className="text-2xl font-normal opacity-60"> days</span>
                   </div>
 
@@ -187,9 +250,9 @@ function PredictorPage() {
                       />
                     </div>
                     <div className="flex justify-between text-[10px] font-mono mt-2 opacity-70">
-                      <span>Min {estimate.min}d</span>
-                      <span>Expected {estimate.expected}d</span>
-                      <span>Max {estimate.max}d</span>
+                      <span>Min {aggregate.min}d</span>
+                      <span>Expected {aggregate.expected}d</span>
+                      <span>Max {aggregate.max}d</span>
                     </div>
                   </div>
 
@@ -199,7 +262,7 @@ function PredictorPage() {
                         Earliest launch
                       </p>
                       <p className="font-display font-bold text-lg mt-1">
-                        {formatLaunchWindow(estimate.min)}
+                        {formatLaunchWindow(aggregate.min)}
                       </p>
                     </div>
                     <div>
@@ -207,7 +270,7 @@ function PredictorPage() {
                         Realistic launch
                       </p>
                       <p className="font-display font-bold text-lg mt-1 text-brand">
-                        {formatLaunchWindow(estimate.expected)}
+                        {formatLaunchWindow(aggregate.expected)}
                       </p>
                     </div>
                     <div>
@@ -215,16 +278,66 @@ function PredictorPage() {
                         Buffer plan for
                       </p>
                       <p className="font-display font-bold text-lg mt-1">
-                        {formatLaunchWindow(estimate.max)}
+                        {formatLaunchWindow(aggregate.max)}
                       </p>
                     </div>
                   </div>
                 </div>
 
+                {perPermit.length > 1 && (
+                  <div className="bg-background border border-edge rounded-xl p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-4">
+                      Per-permit breakdown
+                    </p>
+                    <div className="space-y-3">
+                      {perPermit
+                        .slice()
+                        .sort((a, b) => b.expected - a.expected)
+                        .map((e) => {
+                          const isCritical = e.permit === aggregate.critical.permit;
+                          const pct = Math.round((e.expected / aggregate.expected) * 100);
+                          return (
+                            <div key={e.permit}>
+                              <div className="flex items-baseline justify-between text-xs mb-1">
+                                <span
+                                  className={
+                                    isCritical
+                                      ? "font-bold text-brand"
+                                      : "font-semibold text-foreground"
+                                  }
+                                >
+                                  {e.permit}
+                                  {isCritical && (
+                                    <span className="ml-2 text-[10px] font-mono uppercase tracking-widest">
+                                      critical path
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="font-mono text-ink-muted">
+                                  {e.min}–{e.max}d
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-surface rounded-full overflow-hidden">
+                                <div
+                                  className={
+                                    isCritical
+                                      ? "h-full bg-brand"
+                                      : "h-full bg-foreground/40"
+                                  }
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
                 {approvalExpected && approvalEarliest && approvalLatest && (
                   <div className="bg-background border border-edge rounded-xl p-6">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      Estimated approval date
+                      Estimated approval date (all permits in hand)
                     </p>
                     <p className="font-display text-3xl font-bold mt-2 leading-tight">
                       {fmtFullDate(approvalExpected)}
@@ -269,45 +382,23 @@ function PredictorPage() {
                     {deadlinePassed && (
                       <p className="text-xs font-semibold text-brand mt-3">
                         Heads up — your target launch is sooner than the typical wait
-                        for this permit. Consider filing immediately or pushing the
+                        for these permits. Consider filing immediately or pushing the
                         launch date.
                       </p>
                     )}
                   </div>
                 )}
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="bg-background border border-edge rounded-xl p-5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      vs. city average
-                    </p>
-                    <p
-                      className={
-                        estimate.deltaPct < 0
-                          ? "font-display text-3xl font-bold text-success mt-1"
-                          : estimate.deltaPct > 0
-                            ? "font-display text-3xl font-bold text-brand mt-1"
-                            : "font-display text-3xl font-bold mt-1"
-                      }
-                    >
-                      {estimate.deltaPct > 0 ? "+" : ""}
-                      {estimate.deltaPct}%
-                    </p>
-                    <p className="text-xs text-ink-muted mt-1">
-                      City median for this permit: {estimate.cityAvg} days.
-                    </p>
-                  </div>
-                  <div className="bg-background border border-edge rounded-xl p-5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      Primary bottleneck
-                    </p>
-                    <p className="font-display font-bold text-base mt-2 leading-tight">
-                      {estimate.neighborhood.primaryBottleneck}
-                    </p>
-                    <p className="text-xs text-ink-muted mt-2">
-                      Schedule early submissions around this step to keep your timeline on track.
-                    </p>
-                  </div>
+                <div className="bg-background border border-edge rounded-xl p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                    Primary bottleneck
+                  </p>
+                  <p className="font-display font-bold text-base mt-2 leading-tight">
+                    {aggregate.neighborhood.primaryBottleneck}
+                  </p>
+                  <p className="text-xs text-ink-muted mt-2">
+                    Schedule early submissions around this step to keep your timeline on track.
+                  </p>
                 </div>
               </>
             )}
