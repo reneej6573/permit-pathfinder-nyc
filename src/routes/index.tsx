@@ -10,7 +10,6 @@ import {
   boroughFriction,
   cityAverage,
   estimateTimeline,
-  findNeighborhoodByZip,
   type Borough,
   type PermitType,
 } from "@/lib/permit-data";
