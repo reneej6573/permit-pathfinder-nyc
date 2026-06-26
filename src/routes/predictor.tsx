@@ -33,10 +33,55 @@ function formatLaunchWindow(days: number) {
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function fmtFullDate(d: Date) {
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function toInputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 function PredictorPage() {
   const [slug, setSlug] = useState("bushwick");
   const [permit, setPermit] = useState<PermitType>("Full Liquor License (SLA)");
   const estimate = useMemo(() => estimateTimeline(slug, permit), [slug, permit]);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const defaultLaunch = useMemo(
+    () => toInputDate(addDays(today, (estimate?.expected ?? 60) + 30)),
+    [today, estimate?.expected],
+  );
+  const [launchDate, setLaunchDate] = useState<string>(defaultLaunch);
+
+  const targetLaunch = launchDate ? new Date(launchDate + "T00:00:00") : null;
+  const approvalEarliest = estimate ? addDays(today, estimate.min) : null;
+  const approvalExpected = estimate ? addDays(today, estimate.expected) : null;
+  const approvalLatest = estimate ? addDays(today, estimate.max) : null;
+
+  const deadlineRecommended =
+    estimate && targetLaunch ? addDays(targetLaunch, -estimate.max) : null;
+  const deadlineLatest =
+    estimate && targetLaunch ? addDays(targetLaunch, -estimate.expected) : null;
+  const daysUntilDeadline =
+    deadlineRecommended
+      ? Math.ceil((deadlineRecommended.getTime() - today.getTime()) / 86400000)
+      : null;
+  const deadlinePassed = daysUntilDeadline !== null && daysUntilDeadline < 0;
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
