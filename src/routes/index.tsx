@@ -118,26 +118,117 @@ function ExplorerPage() {
                     );
                   })}
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-brand/20 border border-brand/50" />
-                  <span className="text-[10px] font-bold uppercase tracking-tighter text-ink-muted/80">
-                    Hot zone: high lag time
-                  </span>
-                </div>
+                <form onSubmit={handleZipSubmit} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{5}"
+                    maxLength={5}
+                    value={zipQuery}
+                    onChange={(e) => setZipQuery(e.target.value.replace(/[^0-9]/g, ""))}
+                    placeholder="ZIP code"
+                    aria-label="Search by ZIP code"
+                    className="w-28 bg-background border border-edge rounded-md px-3 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand/30"
+                  />
+                  <button
+                    type="submit"
+                    className="px-3 py-1.5 bg-brand text-brand-foreground rounded-md text-xs font-bold uppercase tracking-wider"
+                  >
+                    Zoom
+                  </button>
+                  {selected && (
+                    <button
+                      type="button"
+                      onClick={() => { setSlug(""); setZipQuery(""); setZipError(""); }}
+                      className="text-[10px] font-semibold uppercase tracking-wider text-ink-muted hover:text-foreground"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </form>
               </div>
+              {zipError && (
+                <div className="px-4 py-2 text-xs text-brand bg-brand/5 border-b border-edge">
+                  {zipError}
+                </div>
+              )}
 
               <div className="relative w-full aspect-[16/9] bg-surface overflow-hidden">
-                <img
-                  src={nycHeatmap}
-                  alt="Heat map of NYC neighborhoods showing permit approval lag times"
-                  width={1600}
-                  height={896}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent" />
+                <svg
+                  viewBox={viewBox}
+                  className="absolute inset-0 w-full h-full transition-[viewBox] duration-500"
+                  preserveAspectRatio="xMidYMid meet"
+                  role="img"
+                  aria-label="Interactive NYC permit lag map"
+                >
+                  {/* stylized borough background blobs */}
+                  <g opacity="0.35">
+                    <ellipse cx="52" cy="42" rx="6" ry="18" className="fill-edge" />
+                    <ellipse cx="62" cy="55" rx="14" ry="12" className="fill-edge" />
+                    <ellipse cx="74" cy="40" rx="14" ry="9" className="fill-edge" />
+                    <ellipse cx="52" cy="22" rx="10" ry="8" className="fill-edge" />
+                    <ellipse cx="32" cy="70" rx="8" ry="7" className="fill-edge" />
+                  </g>
+                  {NEIGHBORHOODS.map((n) => {
+                    const days = n.days[permit];
+                    const dimmed = boroughFilter !== "All" && n.borough !== boroughFilter;
+                    const isSel = n.slug === slug;
+                    const r = isSel ? 3.6 : 2.6;
+                    return (
+                      <g
+                        key={n.slug}
+                        onClick={() => { setSlug(n.slug); setZipError(""); }}
+                        className="cursor-pointer"
+                        opacity={dimmed ? 0.25 : 1}
+                      >
+                        <circle
+                          cx={n.x}
+                          cy={n.y}
+                          r={r + 2}
+                          className={`${colorClassFor(days)} opacity-25`}
+                          fill="currentColor"
+                        />
+                        <circle
+                          cx={n.x}
+                          cy={n.y}
+                          r={r}
+                          className={colorClassFor(days)}
+                          fill="currentColor"
+                          stroke={isSel ? "white" : "none"}
+                          strokeWidth={isSel ? 0.6 : 0}
+                        />
+                        {(isSel || selected === undefined) && (
+                          <text
+                            x={n.x}
+                            y={n.y - r - 1.5}
+                            textAnchor="middle"
+                            className="fill-foreground font-display"
+                            style={{ fontSize: selected ? 2 : 2.6, fontWeight: 600 }}
+                          >
+                            {n.name}
+                          </text>
+                        )}
+                        {isSel && (
+                          <text
+                            x={n.x}
+                            y={n.y + r + 3}
+                            textAnchor="middle"
+                            className="fill-ink-muted"
+                            style={{ fontSize: 1.8 }}
+                          >
+                            {days}d · {n.zips[0]}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+                <div className="absolute top-3 right-3 bg-background/95 backdrop-blur border border-edge rounded-md px-2 py-1 text-[10px] font-semibold text-ink-muted">
+                  {selected ? `Zoomed: ${selected.name}` : "Click a neighborhood to zoom"}
+                </div>
                 <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur border border-edge rounded-md px-3 py-2 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1">
-                    Legend — Median Alt-1 days
+                    Legend — Median {permit.split(" ")[0]} days
                   </p>
                   <div className="flex items-center gap-4 text-[11px] font-medium">
                     <span className="flex items-center gap-1.5">
