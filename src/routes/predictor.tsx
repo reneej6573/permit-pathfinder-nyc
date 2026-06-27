@@ -197,13 +197,16 @@ function PredictorPage() {
             </div>
             <div>
               <div className="flex items-baseline justify-between mb-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                  Permits (select all you need)
-                </label>
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-foreground">
+                  DOB Permits
+                </h2>
                 <span className="text-[10px] font-mono text-ink-muted">
-                  {selectedPermits.length} selected
+                  {selectedPermits.length} / {PERMIT_TYPES.length} selected
                 </span>
               </div>
+              <p className="text-[11px] text-ink-muted mb-2">
+                Construction-related permits from DOB NOW filings.
+              </p>
               <div className="grid grid-cols-1 gap-2">
                 {PERMIT_TYPES.map((p) => {
                   const checked = selectedPermits.includes(p);
@@ -238,6 +241,99 @@ function PredictorPage() {
                 Filings run in parallel — the longest permit drives your launch date.
               </p>
             </div>
+
+            <div>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-foreground mb-1.5">
+                DCWP License Requirements
+              </h2>
+              <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
+                Select Your Business Type
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
+              >
+                <option value="">— Choose a business category —</option>
+                {dcwpCategories.map((c) => (
+                  <option key={c.category} value={c.category}>
+                    {c.category}
+                  </option>
+                ))}
+              </select>
+
+              {selectedCategory && (
+                <div className="mt-3">
+                  <div className="flex items-baseline justify-between mb-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                      Suggested licenses
+                    </p>
+                    {!dcwpQuery.isLoading && dcwpPermits.length > 0 && (
+                      <span className="text-[10px] font-mono text-ink-muted">
+                        {dcwpSelectedIds.length} / {dcwpPermits.length} selected
+                      </span>
+                    )}
+                  </div>
+                  {dcwpQuery.isLoading ? (
+                    <p className="text-xs text-ink-muted py-3">Loading DCWP licenses…</p>
+                  ) : dcwpPermits.length === 0 ? (
+                    <p className="text-xs text-ink-muted py-3">
+                      No permit data found for this business type. Try a different category.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {dcwpPermits.map((p) => {
+                        const checked = dcwpSelectedIds.includes(p.id);
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            aria-pressed={checked}
+                            onClick={() => toggleDcwp(p.id)}
+                            className={
+                              checked
+                                ? "flex items-center gap-2.5 text-left px-3 py-2.5 border-2 border-brand bg-brand/5 rounded-md text-xs font-bold text-brand"
+                                : "flex items-center gap-2.5 text-left px-3 py-2.5 border border-edge bg-background hover:border-foreground transition-colors rounded-md text-xs font-semibold text-ink-muted"
+                            }
+                          >
+                            <span
+                              className={
+                                checked
+                                  ? "flex h-4 w-4 items-center justify-center rounded-sm bg-brand text-background text-[10px] font-bold"
+                                  : "flex h-4 w-4 items-center justify-center rounded-sm border border-edge"
+                              }
+                              aria-hidden
+                            >
+                              {checked ? "✓" : ""}
+                            </span>
+                            <span className="flex-1">
+                              {p.category} — {p.licenseType}
+                            </span>
+                            {p.avgDays > 0 && (
+                              <span className="text-[10px] font-mono opacity-70">
+                                ~{p.avgDays}d
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-edge pt-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                  Total permits selected
+                </span>
+                <span className="text-sm font-mono font-bold text-foreground">
+                  {totalSelected} / {totalSuggested}
+                </span>
+              </div>
+            </div>
+
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
                 Target Launch Date
