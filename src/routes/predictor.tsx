@@ -34,7 +34,11 @@ export const Route = createFileRoute("/predictor")({
 function formatLaunchWindow(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 function addDays(base: Date, days: number) {
   const d = new Date(base);
