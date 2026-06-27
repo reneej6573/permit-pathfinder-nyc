@@ -80,7 +80,7 @@ function BenchmarksPage() {
           <div className="px-6 py-4 border-b border-edge flex items-center justify-between">
             <h2 className="font-display font-bold text-sm uppercase tracking-wider">{permit}</h2>
             <p className="text-xs text-ink-muted">
-              City median:{" "}
+              City estimate:{" "}
               <span className="font-display font-bold text-foreground">{cityMedian} days</span>
             </p>
           </div>
@@ -131,7 +131,7 @@ function BenchmarksPage() {
                             : "text-[10px] uppercase tracking-wider text-ink-muted font-semibold"
                       }
                     >
-                      {delta === 0 ? "On city median" : `${delta > 0 ? "+" : ""}${delta}% vs city median`}
+                      {delta === 0 ? "On city estimate" : `${delta > 0 ? "+" : ""}${delta}% vs city estimate`}
                     </p>
                   </div>
                 </li>

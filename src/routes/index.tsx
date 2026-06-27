@@ -89,7 +89,7 @@ function ExplorerPage() {
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
             Wait times are computed live from the City's DOB NOW dataset — {neighborhoods.length}{" "}
-            ZIPs ranked by median days from filing to permit issuance.
+            ZIPs ranked by estimated days from filing to permit issuance.
           </p>
         </header>
 
@@ -178,7 +178,7 @@ function ExplorerPage() {
                     ZIP ranking
                   </h2>
                   <p className="text-xs text-ink-muted mt-0.5">
-                    Median days to issuance • City median{" "}
+                    Estimated days to issuance • City estimate{" "}
                     <span className="font-semibold text-foreground">{cityMedian}d</span>
                   </p>
                 </div>
@@ -238,8 +238,8 @@ function ExplorerPage() {
                           </p>
                           <p className="text-[10px] uppercase tracking-wider text-ink-muted">
                             {delta === 0
-                              ? "On city average"
-                              : `${faster ? "" : "+"}${delta}% vs city median`}
+                              ? "On city estimate"
+                              : `${faster ? "" : "+"}${delta}% vs city estimate`}
                           </p>
                         </div>
                       </button>
@@ -389,7 +389,7 @@ function ExplorerPage() {
                 ))}
               </div>
               <p className="mt-6 text-[10px] leading-relaxed text-ink-muted italic">
-                * Median approval→issuance days across ZIPs in each borough for{" "}
+                * Estimated approval→issuance days across ZIPs in each borough for{" "}
                 <span className="font-semibold">{permit}</span>.
               </p>
             </div>
