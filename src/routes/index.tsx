@@ -46,12 +46,12 @@ function ExplorerPage() {
   const [slug, setSlug] = useState<string>(neighborhoods[0]?.slug ?? "");
 
   const estimate = useMemo(
-    () => estimateTimeline(slug, permit, neighborhoods, stats.cityAvgByPermit),
-    [slug, permit, neighborhoods, stats.cityAvgByPermit],
+    () => estimateTimeline(slug, permit, neighborhoods, stats.cityMedianByPermit),
+    [slug, permit, neighborhoods, stats.cityMedianByPermit],
   );
   const friction = useMemo(() => boroughFriction(neighborhoods, permit), [neighborhoods, permit]);
   const cityMaxFriction = Math.max(1, ...friction.map((f) => f.days));
-  const cityAvg = stats.cityAvgByPermit[permit] ?? 0;
+  const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const selected = useMemo(
     () => neighborhoods.find((n) => n.slug === slug),
     [neighborhoods, slug],
