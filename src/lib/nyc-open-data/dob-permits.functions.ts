@@ -269,17 +269,16 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
   const [meta, perPermitLag, perPermitCity, trend] = await Promise.all([
     loadZipMetadata(30, 250),
     Promise.all(PERMIT_TYPES.map((p) => loadZipLagForPermit(p))),
-    Promise.all(PERMIT_TYPES.map((p) => loadCityAvgForPermit(p))),
+    Promise.all(PERMIT_TYPES.map((p) => loadCityMedianForPermit(p))),
     loadTrend(midIso),
   ]);
 
   const lagByZip = new Map<string, Partial<Record<PermitType, number>>>();
   const bottleneckByZip = new Map<string, { type: PermitType; days: number }>();
   PERMIT_TYPES.forEach((permit, i) => {
-    for (const r of perPermitLag[i]) {
-      const zip = norm(r.postcode);
+    const map = perPermitLag[i];
+    for (const [zip, days] of map) {
       if (!zip) continue;
-      const days = Math.max(1, Math.round(num(r.avg_days)));
       if (!Number.isFinite(days)) continue;
       let m = lagByZip.get(zip);
       if (!m) {
@@ -292,7 +291,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
     }
   });
 
-  const cityAvgByPermit = Object.fromEntries(
+  const cityMedianByPermit = Object.fromEntries(
     PERMIT_TYPES.map((p, i) => [p, perPermitCity[i]]),
   ) as Record<PermitType, number>;
 
@@ -312,7 +311,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
 
     const lagMap = lagByZip.get(zip) ?? {};
     const days = Object.fromEntries(
-      PERMIT_TYPES.map((p) => [p, lagMap[p] ?? cityAvgByPermit[p] ?? 30]),
+      PERMIT_TYPES.map((p) => [p, lagMap[p] ?? cityMedianByPermit[p] ?? 30]),
     ) as Record<PermitType, number>;
 
     const bottleneck = bottleneckByZip.get(zip);
@@ -336,7 +335,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
       permitCount: Math.round(cnt),
       days,
       primaryBottleneck: bottleneck
-        ? `${bottleneck.type} review (avg ${bottleneck.days}d)`
+        ? `${bottleneck.type} review (median ${bottleneck.days}d)`
         : "Plan examiner intake",
       trend: trendPct,
     });
@@ -347,7 +346,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
 
   return {
     neighborhoods: top,
-    cityAvgByPermit,
+    cityMedianByPermit,
     sinceIso: WINDOW_START_ISO,
     fetchedAt: new Date().toISOString(),
   };
