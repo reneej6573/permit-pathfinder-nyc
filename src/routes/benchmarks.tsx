@@ -88,7 +88,7 @@ function BenchmarksPage() {
           <ul>
             {sorted.map((n) => {
               const days = n.days[permit];
-              const delta = avg > 0 ? Math.round(((days - avg) / avg) * 100) : 0;
+              const delta = cityMedian > 0 ? Math.round(((days - cityMedian) / cityMedian) * 100) : 0;
               const widthPct = (days / max) * 100;
               return (
                 <li
