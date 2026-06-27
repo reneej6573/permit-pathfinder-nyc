@@ -22,7 +22,7 @@ export function SiteNav() {
             activeProps={{ className: "text-brand underline decoration-2 underline-offset-4" }}
             className="hover:text-foreground transition-colors"
           >
-            Predictor
+            Timeline Estimator
           </Link>
           <Link
             to="/benchmarks"
