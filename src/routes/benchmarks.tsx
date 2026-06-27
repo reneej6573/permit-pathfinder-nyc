@@ -80,8 +80,8 @@ function BenchmarksPage() {
           <div className="px-6 py-4 border-b border-edge flex items-center justify-between">
             <h2 className="font-display font-bold text-sm uppercase tracking-wider">{permit}</h2>
             <p className="text-xs text-ink-muted">
-              City average:{" "}
-              <span className="font-display font-bold text-foreground">{avg} days</span>
+              City median:{" "}
+              <span className="font-display font-bold text-foreground">{cityMedian} days</span>
             </p>
           </div>
 
