@@ -389,7 +389,7 @@ function ExplorerPage() {
                 ))}
               </div>
               <p className="mt-6 text-[10px] leading-relaxed text-ink-muted italic">
-                * Median avg approval→issuance days across ZIPs in each borough for{" "}
+                * Median approval→issuance days across ZIPs in each borough for{" "}
                 <span className="font-semibold">{permit}</span>.
               </p>
             </div>
