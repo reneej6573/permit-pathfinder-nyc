@@ -268,7 +268,7 @@ function PredictorPage() {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-widest opacity-60">
-                        Realistic launch
+                        Realistic
                       </p>
                       <p className="font-display font-bold text-lg mt-1 text-brand">
                         {formatLaunchWindow(aggregate.expected)}
