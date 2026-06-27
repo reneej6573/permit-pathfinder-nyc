@@ -209,7 +209,7 @@ function PredictorPage() {
             Predictive estimator · live data
           </p>
           <h1 className="font-display text-4xl font-light leading-tight mb-4 text-balance">
-            Forecast your <span className="font-bold">launch window</span> in two clicks.
+            Know when to file so you <span className="font-bold">open on time</span>.
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
             Estimates are computed from the NYC Open Data DOB NOW Approved Permits dataset
