@@ -50,7 +50,7 @@ function BenchmarksPage() {
             Compare ZIPs <span className="font-bold">side by side.</span>
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
-            Avg days from approval to permit issuance, computed live from the NYC DOB NOW dataset.
+            Typical days from application to permit issuance, computed live from the NYC DOB NOW dataset.
             Switch permit types to see how different bureaucratic paths reshape the map.
           </p>
         </header>
@@ -141,11 +141,11 @@ function BenchmarksPage() {
         </section>
 
         <p className="mt-6 text-[11px] text-ink-muted italic">
-          Vertical tick on each bar marks the citywide average for the selected permit type. Source:
+          Vertical tick on each bar marks the citywide typical wait for the selected permit type. Source:
           NYC Open Data, dataset <code className="font-mono">w9ak-ipjd</code> (DOB NOW Job
-          Application Filings) — approved filings from the last 24 months, with approval time
+          Application Filings) — approved filings from the last 24 months, with wait time
           measured as days from <code className="font-mono">filing_date</code> to{" "}
-          <code className="font-mono">approved_date</code>.
+          <code className="font-mono">first_permit_date</code>.
         </p>
       </main>
     </div>
