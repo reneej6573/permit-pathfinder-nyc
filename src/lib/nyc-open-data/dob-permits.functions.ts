@@ -202,7 +202,7 @@ async function loadTrend(midIso: string) {
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select: baseSelect,
-      $where: `${BASE_FILTER} AND approved_date >= '${midIso}T00:00:00'`,
+      $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
       $group: "postcode",
       $limit: 5000,
     },
@@ -212,7 +212,7 @@ async function loadTrend(midIso: string) {
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select: baseSelect,
-      $where: `${BASE_FILTER} AND approved_date < '${midIso}T00:00:00'`,
+      $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
       $group: "postcode",
       $limit: 5000,
     },
@@ -321,7 +321,7 @@ interface RecentRow {
   nta: string;
   job_type: string;
   job_description: string;
-  approved_date: string;
+  first_permit_date: string;
   filing_date: string;
   general_construction_work_type_?: string;
   plumbing_work_type?: string;
@@ -356,7 +356,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       "nta",
       "job_type",
       "job_description",
-      "approved_date",
+      "first_permit_date",
       "filing_date",
       ...Object.values(PERMIT_TYPE_COLUMNS),
     ].join(", ");
@@ -367,7 +367,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       params: {
         $select: selectCols,
         $where: where.join(" AND "),
-        $order: "approved_date DESC",
+        $order: "first_permit_date DESC",
         $limit: limit * 2, // overfetch to allow client dedupe below
       },
     });
@@ -382,7 +382,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       if (!jfn || seen.has(jfn)) continue;
       seen.add(jfn);
 
-      const approved = norm(r.approved_date);
+      const approved = norm(r.first_permit_date);
       const filed = norm(r.filing_date);
       if (!approved || !filed) continue;
       const days = Math.round(
