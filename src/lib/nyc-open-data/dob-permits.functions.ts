@@ -172,33 +172,51 @@ async function loadZipMetadata(minCount: number, limit: number) {
 
 async function loadZipLagForPermit(permit: PermitType) {
   const col = PERMIT_TYPE_COLUMNS[permit];
-  return fetchSocrata<ZipLagRow>({
+  const rows = await fetchSocrata<ZipDayRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select:
-        "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days, count(*) as cnt",
+        "postcode, date_diff_d(first_permit_date, filing_date) as days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
-      $group: "postcode",
-      $having: "cnt > 3",
       $limit: 50000,
     },
   });
+  const zipDays = new Map<string, number[]>();
+  for (const r of rows) {
+    const zip = norm(r.postcode);
+    const days = num(r.days);
+    if (!zip || !Number.isFinite(days) || days < 0) continue;
+    const arr = zipDays.get(zip) ?? [];
+    arr.push(days);
+    zipDays.set(zip, arr);
+  }
+  const medianByZip = new Map<string, number>();
+  for (const [zip, arr] of zipDays) {
+    if (arr.length < 4) continue; // same threshold as old cnt > 3
+    arr.sort((a, b) => a - b);
+    medianByZip.set(zip, Math.max(1, medianOf(arr)));
+  }
+  return medianByZip;
 }
 
-async function loadCityAvgForPermit(permit: PermitType) {
+async function loadCityMedianForPermit(permit: PermitType) {
   const col = PERMIT_TYPE_COLUMNS[permit];
-  const rows = await fetchSocrata<CityAvgRow>({
+  const rows = await fetchSocrata<CityDayRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
-      $select: "avg(date_diff_d(first_permit_date, filing_date)) as avg_days",
+      $select: "date_diff_d(first_permit_date, filing_date) as days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
-      $limit: 1,
+      $limit: 50000,
     },
   });
-  const v = Number(rows[0]?.avg_days);
-  return Number.isFinite(v) ? Math.max(1, Math.round(v)) : 30;
+  const all = rows
+    .map((r) => num(r.days))
+    .filter((d) => Number.isFinite(d) && d >= 0)
+    .sort((a, b) => a - b);
+  const v = medianOf(all);
+  return Number.isFinite(v) ? Math.max(1, v) : 30;
 }
 
 async function loadTrend(midIso: string) {
