@@ -106,6 +106,7 @@ function ExplorerPage() {
     if (!parts.length) return null;
     const critical = parts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return {
+      parts: [...parts].sort((a, b) => b.expected - a.expected),
       critical,
       expected: critical.expected,
       min: Math.max(...parts.map((p) => p.min)),
@@ -495,6 +496,28 @@ function ExplorerPage() {
                       <span>Min {combinedEstimate.min}d</span>
                       <span>—</span>
                       <span>Max {combinedEstimate.max}d</span>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-white/15 space-y-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">
+                        Included in this estimate
+                      </p>
+                      {combinedEstimate.parts.map((p) => {
+                        const isCrit = p.label === combinedEstimate.critical.label;
+                        return (
+                          <div
+                            key={p.label}
+                            className="flex items-center justify-between gap-2 text-[11px]"
+                          >
+                            <span className={isCrit ? "font-semibold truncate" : "opacity-80 truncate"}>
+                              {isCrit ? "▸ " : ""}{p.label}
+                            </span>
+                            <span className="font-mono opacity-90 shrink-0">{p.expected}d</span>
+                          </div>
+                        );
+                      })}
+                      <p className="text-[10px] opacity-60 leading-snug pt-1">
+                        Permits and licenses file in parallel — the longest one sets your launch date.
+                      </p>
                     </div>
                   </div>
                 )}
