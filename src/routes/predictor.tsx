@@ -11,7 +11,10 @@ import {
   neighborhoodStatsQuery,
   dcwpCategoriesQuery,
   dcwpPermitsForCategoryQuery,
+  dobSeasonalityQuery,
+  dcwpSeasonalityForCategoryQuery,
 } from "@/lib/nyc-open-data/queries";
+
 
 export const Route = createFileRoute("/predictor")({
   head: () => ({
