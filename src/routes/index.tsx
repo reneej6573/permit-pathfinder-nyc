@@ -178,8 +178,8 @@ function ExplorerPage() {
                     ZIP ranking
                   </h2>
                   <p className="text-xs text-ink-muted mt-0.5">
-                    Avg days to issuance • City avg{" "}
-                    <span className="font-semibold text-foreground">{cityAvg}d</span>
+                    Median days to issuance • City median{" "}
+                    <span className="font-semibold text-foreground">{cityMedian}d</span>
                   </p>
                 </div>
                 <select
