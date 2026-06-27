@@ -31,6 +31,7 @@ export const Route = createFileRoute("/predictor")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(neighborhoodStatsQuery);
+    context.queryClient.ensureQueryData(dcwpCategoriesQuery);
   },
   component: PredictorPage,
 });
@@ -77,6 +78,38 @@ function PredictorPage() {
         : [...prev, p],
     );
   };
+
+  // ---- DCWP licensing state -------------------------------------------------
+  const { data: dcwpCategories } = useSuspenseQuery(dcwpCategoriesQuery);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  // Per-category selection cache so switching categories preserves choices.
+  const [dcwpSelectionsByCategory, setDcwpSelectionsByCategory] = useState<
+    Record<string, string[]>
+  >({});
+
+  const dcwpQuery = useQuery(dcwpPermitsForCategoryQuery(selectedCategory));
+  const dcwpPermits = dcwpQuery.data ?? [];
+
+  // Default-check all permits the first time a category is loaded; respect
+  // any cached selection the user already made for this category this session.
+  const cachedSelection = dcwpSelectionsByCategory[selectedCategory];
+  const dcwpSelectedIds = useMemo(() => {
+    if (!selectedCategory) return [] as string[];
+    if (cachedSelection) return cachedSelection;
+    return dcwpPermits.map((p) => p.id);
+  }, [selectedCategory, cachedSelection, dcwpPermits]);
+
+  const toggleDcwp = (id: string) => {
+    if (!selectedCategory) return;
+    const current = cachedSelection ?? dcwpPermits.map((p) => p.id);
+    const next = current.includes(id)
+      ? current.filter((x) => x !== id)
+      : [...current, id];
+    setDcwpSelectionsByCategory((prev) => ({ ...prev, [selectedCategory]: next }));
+  };
+
+  const totalSelected = selectedPermits.length + dcwpSelectedIds.length;
+  const totalSuggested = selectedPermits.length + dcwpPermits.length;
 
   const perPermit = useMemo(
     () =>
