@@ -111,12 +111,47 @@ function PredictorPage() {
   const totalSelected = selectedPermits.length + dcwpSelectedIds.length;
   const totalSuggested = selectedPermits.length + dcwpPermits.length;
 
-  const perPermit = useMemo(
+  const dobEstimates = useMemo(
     () =>
       selectedPermits
         .map((p) => estimateTimeline(slug, p, neighborhoods, stats.cityMedianByPermit))
-        .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e),
+        .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e)
+        .map((e) => ({
+          key: `dob:${e.permit}`,
+          label: e.permit,
+          source: "DOB" as const,
+          expected: e.expected,
+          min: e.min,
+          max: e.max,
+          confidence: e.confidence,
+          neighborhood: e.neighborhood,
+        })),
     [slug, selectedPermits, neighborhoods, stats.cityMedianByPermit],
+  );
+
+  const dcwpEstimates = useMemo(() => {
+    if (!selectedCategory) return [];
+    return dcwpPermits
+      .filter((p) => dcwpSelectedIds.includes(p.id) && p.avgDays > 0)
+      .map((p) => {
+        const expected = Math.max(1, p.avgDays);
+        const variance = Math.max(1, Math.round(expected * 0.18));
+        return {
+          key: `dcwp:${p.id}`,
+          label: `${p.licenseType} (DCWP)`,
+          source: "DCWP" as const,
+          expected,
+          min: Math.max(1, expected - variance),
+          max: expected + variance,
+          confidence: 80,
+          neighborhood: null as null | (typeof dobEstimates)[number]["neighborhood"],
+        };
+      });
+  }, [selectedCategory, dcwpPermits, dcwpSelectedIds, dobEstimates]);
+
+  const perPermit = useMemo(
+    () => [...dobEstimates, ...dcwpEstimates],
+    [dobEstimates, dcwpEstimates],
   );
 
   const aggregate = useMemo(() => {
@@ -124,15 +159,20 @@ function PredictorPage() {
     const critical = perPermit.reduce((a, b) => (b.expected > a.expected ? b : a));
     const min = Math.max(...perPermit.map((e) => e.min));
     const max = Math.max(...perPermit.map((e) => e.max));
+    const neighborhood =
+      critical.neighborhood ??
+      dobEstimates[0]?.neighborhood ??
+      neighborhoods.find((n) => n.slug === slug) ??
+      neighborhoods[0];
     return {
-      neighborhood: critical.neighborhood,
+      neighborhood,
       critical,
       expected: critical.expected,
       min,
       max,
       confidence: Math.min(...perPermit.map((e) => e.confidence)),
     };
-  }, [perPermit]);
+  }, [perPermit, dobEstimates, neighborhoods, slug]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -358,13 +398,14 @@ function PredictorPage() {
                   <div className="flex items-start justify-between mb-6">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                        Projected wait ({selectedPermits.length} permit
-                        {selectedPermits.length > 1 ? "s" : ""})
+                        Projected wait ({perPermit.length} permit
+                        {perPermit.length === 1 ? "" : "s"})
                       </p>
                       <p className="text-xs opacity-80 mt-1">
                         {aggregate.neighborhood.name} · ZIP {aggregate.neighborhood.zips[0]} —
-                        critical path: {aggregate.critical.permit}
+                        critical path: {aggregate.critical.label}
                       </p>
+
                     </div>
                     <span className="text-[10px] font-mono bg-white/10 px-2 py-1 rounded-sm">
                       {aggregate.confidence}% confidence
@@ -428,10 +469,10 @@ function PredictorPage() {
                         .slice()
                         .sort((a, b) => b.expected - a.expected)
                         .map((e) => {
-                          const isCritical = e.permit === aggregate.critical.permit;
+                          const isCritical = e.key === aggregate.critical.key;
                           const pct = Math.round((e.expected / aggregate.expected) * 100);
                           return (
-                            <div key={e.permit}>
+                            <div key={e.key}>
                               <div className="flex items-baseline justify-between text-xs mb-1">
                                 <span
                                   className={
@@ -440,7 +481,7 @@ function PredictorPage() {
                                       : "font-semibold text-foreground"
                                   }
                                 >
-                                  {e.permit}
+                                  {e.label}
                                   {isCritical && (
                                     <span className="ml-2 text-[10px] font-mono uppercase tracking-widest">
                                       critical path
