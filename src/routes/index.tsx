@@ -106,6 +106,7 @@ function ExplorerPage() {
     if (!parts.length) return null;
     const critical = parts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return {
+      parts: [...parts].sort((a, b) => b.expected - a.expected),
       critical,
       expected: critical.expected,
       min: Math.max(...parts.map((p) => p.min)),
