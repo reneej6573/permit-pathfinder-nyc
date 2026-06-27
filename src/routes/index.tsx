@@ -153,19 +153,19 @@ function ExplorerPage() {
                   {selected ? `Zoomed: ${selected.name} · ${selected.zips[0]}` : "Click a marker or pick a ZIP"}
                 </div>
                 <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur border border-edge rounded-md px-3 py-2 shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1">
-                    Legend — Avg approval→issued days
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">
+                    Avg days, filing → issued
                   </p>
-                  <div className="flex items-center gap-4 text-[11px] font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-success" /> &lt; 40
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-warning" /> 40–90
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-brand" /> 90+
-                    </span>
+                  <div
+                    className="h-2 w-44 rounded-sm"
+                    style={{
+                      background:
+                        "linear-gradient(to right,#fde9e1,#fbc7b0,#f99e76,#f47042,#d94915,#a32f08)",
+                    }}
+                  />
+                  <div className="mt-1 flex justify-between text-[10px] font-mono text-ink-muted w-44">
+                    <span>Fewer</span>
+                    <span>More</span>
                   </div>
                 </div>
               </div>
