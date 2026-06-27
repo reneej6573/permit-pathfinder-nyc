@@ -507,21 +507,6 @@ function PredictorPage() {
                   </div>
                 )}
 
-                {approvalExpected && approvalEarliest && approvalLatest && (
-                  <div className="bg-background border border-edge rounded-xl p-6">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      Estimated approval date (all permits in hand)
-                    </p>
-                    <p className="font-display text-3xl font-bold mt-2 leading-tight">
-                      {fmtFullDate(approvalExpected)}
-                    </p>
-                    <p className="text-xs text-ink-muted mt-2">
-                      If you file today. Range: {fmtFullDate(approvalEarliest)} →{" "}
-                      {fmtFullDate(approvalLatest)}.
-                    </p>
-                  </div>
-                )}
-
                 {targetLaunch && deadlineRecommended && deadlineLatest && (
                   <div
                     className={
@@ -557,6 +542,21 @@ function PredictorPage() {
                         permits. Consider filing immediately or pushing the launch date.
                       </p>
                     )}
+                  </div>
+                )}
+
+                {approvalExpected && approvalEarliest && approvalLatest && (
+                  <div className="bg-background border border-edge rounded-xl p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                      Estimated approval date (all permits in hand)
+                    </p>
+                    <p className="font-display text-3xl font-bold mt-2 leading-tight">
+                      {fmtFullDate(approvalExpected)}
+                    </p>
+                    <p className="text-xs text-ink-muted mt-2">
+                      If you file today. Range: {fmtFullDate(approvalEarliest)} →{" "}
+                      {fmtFullDate(approvalLatest)}.
+                    </p>
                   </div>
                 )}
 
