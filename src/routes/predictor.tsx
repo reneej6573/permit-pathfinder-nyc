@@ -469,10 +469,10 @@ function PredictorPage() {
                         .slice()
                         .sort((a, b) => b.expected - a.expected)
                         .map((e) => {
-                          const isCritical = e.permit === aggregate.critical.permit;
+                          const isCritical = e.key === aggregate.critical.key;
                           const pct = Math.round((e.expected / aggregate.expected) * 100);
                           return (
-                            <div key={e.permit}>
+                            <div key={e.key}>
                               <div className="flex items-baseline justify-between text-xs mb-1">
                                 <span
                                   className={
@@ -481,7 +481,7 @@ function PredictorPage() {
                                       : "font-semibold text-foreground"
                                   }
                                 >
-                                  {e.permit}
+                                  {e.label}
                                   {isCritical && (
                                     <span className="ml-2 text-[10px] font-mono uppercase tracking-widest">
                                       critical path
