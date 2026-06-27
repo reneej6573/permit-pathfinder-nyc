@@ -398,13 +398,14 @@ function PredictorPage() {
                   <div className="flex items-start justify-between mb-6">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                        Projected wait ({selectedPermits.length} permit
-                        {selectedPermits.length > 1 ? "s" : ""})
+                        Projected wait ({perPermit.length} permit
+                        {perPermit.length === 1 ? "" : "s"})
                       </p>
                       <p className="text-xs opacity-80 mt-1">
                         {aggregate.neighborhood.name} · ZIP {aggregate.neighborhood.zips[0]} —
-                        critical path: {aggregate.critical.permit}
+                        critical path: {aggregate.critical.label}
                       </p>
+
                     </div>
                     <span className="text-[10px] font-mono bg-white/10 px-2 py-1 rounded-sm">
                       {aggregate.confidence}% confidence
