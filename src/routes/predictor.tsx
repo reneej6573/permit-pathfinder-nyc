@@ -379,7 +379,7 @@ function PredictorPage() {
 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
-                Target Launch Date
+                Target Permit Readiness Date
               </label>
               <input
                 type="date"
@@ -389,9 +389,10 @@ function PredictorPage() {
                 className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
               <p className="text-[11px] text-ink-muted mt-1.5">
-                When you'd like to open. We'll work backward to your application deadline.
+                When you need all permits in hand. We'll work backward to your filing deadline.
               </p>
             </div>
+
           </div>
 
           <div className="lg:col-span-3 space-y-6">
