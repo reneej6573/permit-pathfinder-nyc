@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
 import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
@@ -11,7 +11,12 @@ import {
   type Borough,
   type PermitType,
 } from "@/lib/permit-data";
-import { neighborhoodStatsQuery, recentApprovalsQuery } from "@/lib/nyc-open-data/queries";
+import {
+  neighborhoodStatsQuery,
+  recentApprovalsQuery,
+  dcwpCategoriesQuery,
+  dcwpPermitsForCategoryQuery,
+} from "@/lib/nyc-open-data/queries";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -20,18 +25,20 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Live NYC DOB permit approval times by ZIP. Map, ranking, and recent approvals sourced from NYC Open Data.",
+          "Compare NYC neighborhoods by DOB permit and DCWP license wait times to pick the best ZIP to open your business.",
       },
       { property: "og:title", content: "NYC Permit Path — Explorer" },
       {
         property: "og:description",
-        content: "Live map of NYC permit lag times from the DOB NOW Job Application Filings dataset.",
+        content:
+          "Scout NYC neighborhoods by permit and license lead times before you sign a lease.",
       },
     ],
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(neighborhoodStatsQuery);
     context.queryClient.ensureQueryData(recentApprovalsQuery({ limit: 8 }));
+    context.queryClient.ensureQueryData(dcwpCategoriesQuery);
   },
   component: ExplorerPage,
 });
@@ -39,16 +46,75 @@ export const Route = createFileRoute("/")({
 function ExplorerPage() {
   const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
   const { data: recent } = useSuspenseQuery(recentApprovalsQuery({ limit: 8 }));
+  const { data: dcwpCategories } = useSuspenseQuery(dcwpCategoriesQuery);
   const neighborhoods = stats.neighborhoods;
 
   const [boroughFilter, setBoroughFilter] = useState<Borough | "All">("All");
   const [permit, setPermit] = useState<PermitType>("General Construction");
   const [slug, setSlug] = useState<string>(neighborhoods[0]?.slug ?? "");
 
-  const estimate = useMemo(
+  // DCWP business category + licenses
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [dcwpSelectionsByCategory, setDcwpSelectionsByCategory] = useState<
+    Record<string, string[]>
+  >({});
+  const dcwpQuery = useQuery(dcwpPermitsForCategoryQuery(selectedCategory));
+  const dcwpPermits = dcwpQuery.data ?? [];
+  const cachedSelection = dcwpSelectionsByCategory[selectedCategory];
+  const dcwpSelectedIds = useMemo(() => {
+    if (!selectedCategory) return [] as string[];
+    if (cachedSelection) return cachedSelection;
+    return dcwpPermits.map((p) => p.id);
+  }, [selectedCategory, cachedSelection, dcwpPermits]);
+  const toggleDcwp = (id: string) => {
+    if (!selectedCategory) return;
+    const current = cachedSelection ?? dcwpPermits.map((p) => p.id);
+    const next = current.includes(id)
+      ? current.filter((x) => x !== id)
+      : [...current, id];
+    setDcwpSelectionsByCategory((prev) => ({ ...prev, [selectedCategory]: next }));
+  };
+
+  const dobEstimate = useMemo(
     () => estimateTimeline(slug, permit, neighborhoods, stats.cityMedianByPermit),
     [slug, permit, neighborhoods, stats.cityMedianByPermit],
   );
+
+  // Combine DOB + selected DCWP licenses into a single projected wait
+  // (parallel filings → bottleneck = longest expected wait).
+  const combinedEstimate = useMemo(() => {
+    const parts: { label: string; expected: number; min: number; max: number }[] = [];
+    if (dobEstimate) {
+      parts.push({
+        label: permit,
+        expected: dobEstimate.expected,
+        min: dobEstimate.min,
+        max: dobEstimate.max,
+      });
+    }
+    for (const p of dcwpPermits) {
+      if (!dcwpSelectedIds.includes(p.id) || p.avgDays <= 0) continue;
+      const expected = Math.max(1, p.avgDays);
+      const variance = Math.max(1, Math.round(expected * 0.18));
+      parts.push({
+        label: `${p.category} — ${p.licenseType}`,
+        expected,
+        min: Math.max(1, expected - variance),
+        max: expected + variance,
+      });
+    }
+    if (!parts.length) return null;
+    const critical = parts.reduce((a, b) => (b.expected > a.expected ? b : a));
+    return {
+      critical,
+      expected: critical.expected,
+      min: Math.max(...parts.map((p) => p.min)),
+      max: Math.max(...parts.map((p) => p.max)),
+      count: parts.length,
+      confidence: dobEstimate?.confidence ?? 80,
+    };
+  }, [dobEstimate, dcwpPermits, dcwpSelectedIds, permit]);
+
   const friction = useMemo(() => boroughFriction(neighborhoods, permit), [neighborhoods, permit]);
   const cityMaxFriction = Math.max(1, ...friction.map((f) => f.days));
   const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
@@ -81,15 +147,16 @@ function ExplorerPage() {
       <main className="max-w-7xl mx-auto p-6 lg:p-10">
         <header className="mb-12 max-w-2xl">
           <p className="text-[10px] font-bold uppercase tracking-widest text-brand mb-3">
-            Live from NYC Open Data · DOB NOW Job Application Filings
+            Live from NYC Open Data · DOB NOW + DCWP Licenses
           </p>
           <h1 className="font-display text-4xl lg:text-5xl font-light leading-tight mb-4 text-balance">
-            Anticipate your <span className="font-bold text-brand">opening day</span> with
-            neighborhood-level data.
+            Scout the <span className="font-bold text-brand">right neighborhood</span> before
+            you sign a lease.
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
-            Wait times are computed live from the City's DOB NOW dataset — {neighborhoods.length}{" "}
-            ZIPs ranked by estimated days from filing to permit issuance.
+            Compare {neighborhoods.length} NYC ZIPs by DOB permit lead times, layer in the DCWP
+            licenses your business actually needs, and see a projected wait per ZIP — so you can
+            pick where to open with the timeline in view.
           </p>
         </header>
 
@@ -291,15 +358,15 @@ function ExplorerPage() {
 
           <aside className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
             <div className="bg-brand text-brand-foreground p-6 rounded-xl shadow-brand">
-              <h2 className="font-display font-bold text-lg mb-1 italic">Predictive Estimator</h2>
+              <h2 className="font-display font-bold text-lg mb-1 italic">Projected wait for this ZIP</h2>
               <p className="text-brand-foreground/80 text-xs mb-6">
-                Calculate your realistic launch window.
+                Pick a DOB permit and your business type to see the realistic timeline here.
               </p>
 
               <div className="space-y-4">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 opacity-80">
-                    Permit Category
+                    DOB Permit
                   </label>
                   <select
                     value={permit}
@@ -330,32 +397,105 @@ function ExplorerPage() {
                   </select>
                 </div>
 
-                {estimate && (
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 opacity-80">
+                    Business Type <span className="opacity-60 font-mono normal-case">(optional)</span>
+                  </label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
+                  >
+                    <option value="" className="text-foreground">— None —</option>
+                    {dcwpCategories.map((c) => (
+                      <option key={c.category} value={c.category} className="text-foreground">
+                        {c.category}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedCategory && (
+                  <div>
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
+                        Suggested licenses
+                      </p>
+                      {!dcwpQuery.isLoading && dcwpPermits.length > 0 && (
+                        <span className="text-[10px] font-mono opacity-70">
+                          {dcwpSelectedIds.length} / {dcwpPermits.length}
+                        </span>
+                      )}
+                    </div>
+                    {dcwpQuery.isLoading ? (
+                      <p className="text-[11px] opacity-70 py-2">Loading licenses…</p>
+                    ) : dcwpPermits.length === 0 ? (
+                      <p className="text-[11px] opacity-70 py-2">
+                        No license data for this business type.
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-1.5 max-h-56 overflow-y-auto pr-1">
+                        {dcwpPermits.map((p) => {
+                          const checked = dcwpSelectedIds.includes(p.id);
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              aria-pressed={checked}
+                              onClick={() => toggleDcwp(p.id)}
+                              className={
+                                checked
+                                  ? "flex items-center gap-2 text-left px-2.5 py-2 border border-white/60 bg-white/15 rounded-md text-[11px] font-semibold"
+                                  : "flex items-center gap-2 text-left px-2.5 py-2 border border-white/20 hover:border-white/50 transition-colors rounded-md text-[11px] font-medium opacity-80"
+                              }
+                            >
+                              <span
+                                className={
+                                  checked
+                                    ? "flex h-3.5 w-3.5 items-center justify-center rounded-sm bg-white text-brand text-[9px] font-bold"
+                                    : "flex h-3.5 w-3.5 items-center justify-center rounded-sm border border-white/40"
+                                }
+                                aria-hidden
+                              >
+                                {checked ? "✓" : ""}
+                              </span>
+                              <span className="flex-1 truncate">{p.licenseType}</span>
+                              {p.avgDays > 0 && (
+                                <span className="text-[10px] font-mono opacity-70">
+                                  ~{p.avgDays}d
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {combinedEstimate && (
                   <div className="mt-2 bg-black/15 rounded-md p-4 border border-white/15">
                     <div className="flex items-baseline justify-between mb-2">
                       <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">
-                        Projected wait
+                        Projected wait ({combinedEstimate.count} permit
+                        {combinedEstimate.count === 1 ? "" : "s"})
                       </span>
                       <span className="text-[10px] font-mono opacity-80">
-                        {estimate.confidence}% confidence
+                        {combinedEstimate.confidence}% conf
                       </span>
                     </div>
                     <div className="font-display text-4xl font-bold leading-none">
-                      {estimate.expected}
+                      {combinedEstimate.expected}
                       <span className="text-lg font-normal opacity-80"> days</span>
                     </div>
-                    <div className="mt-3 flex items-center justify-between text-[10px] font-mono opacity-80">
-                      <span>Min {estimate.min}d</span>
-                      <span>—</span>
-                      <span>Max {estimate.max}d</span>
-                    </div>
-                    <p className="mt-3 text-[11px] opacity-80 leading-relaxed">
-                      {estimate.deltaPct === 0
-                        ? "Tracks with the citywide average."
-                        : estimate.deltaPct < 0
-                          ? `${Math.abs(estimate.deltaPct)}% faster than citywide.`
-                          : `${estimate.deltaPct}% slower than citywide.`}
+                    <p className="mt-2 text-[11px] opacity-80 leading-snug">
+                      Bottleneck: <span className="font-semibold">{combinedEstimate.critical.label}</span>
                     </p>
+                    <div className="mt-3 flex items-center justify-between text-[10px] font-mono opacity-80">
+                      <span>Min {combinedEstimate.min}d</span>
+                      <span>—</span>
+                      <span>Max {combinedEstimate.max}d</span>
+                    </div>
                   </div>
                 )}
 
@@ -397,8 +537,9 @@ function ExplorerPage() {
         </div>
 
         <footer className="mt-16 pt-8 border-t border-edge text-[11px] text-ink-muted">
-          Source: NYC Open Data, DOB NOW: Build — Approved Permits (dataset{" "}
-          <code className="font-mono">rbx6-tga4</code>). Cached server-side, refreshed hourly.
+          Source: NYC Open Data — DOB NOW: Build (dataset{" "}
+          <code className="font-mono">rbx6-tga4</code>) and DCWP License Applications (dataset{" "}
+          <code className="font-mono">ptev-4hud</code>). Cached server-side, refreshed hourly.
           Snapshot fetched {new Date(stats.fetchedAt).toLocaleString()}.
         </footer>
       </main>
