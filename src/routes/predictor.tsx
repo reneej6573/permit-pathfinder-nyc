@@ -571,6 +571,13 @@ function PredictorPage() {
                     Schedule early submissions around this step to keep your timeline on track.
                   </p>
                 </div>
+
+                <Link
+                  to="/"
+                  className="block w-full text-center bg-brand text-brand-foreground font-bold py-3 rounded-md text-sm shadow-xl active:scale-[0.98] transition-transform hover:bg-brand/90"
+                >
+                  Explore other ZIP codes →
+                </Link>
               </>
             )}
           </div>
