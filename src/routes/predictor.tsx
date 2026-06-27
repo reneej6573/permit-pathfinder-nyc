@@ -447,7 +447,38 @@ function PredictorPage() {
           </div>
 
           <div className="lg:col-span-3 space-y-6">
+            {seasonalAlerts.length > 0 && (
+              <div className="border-2 border-brand bg-brand/5 rounded-xl p-6">
+                <div className="flex items-baseline justify-between gap-4 mb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                    Seasonal filing pattern alert
+                  </p>
+                  <span className="text-[10px] font-mono text-ink-muted">
+                    Filing in {monthName}
+                  </span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed mb-3">
+                  Historically, applications filed in <span className="font-bold">{monthName}</span>{" "}
+                  take longer than the year-round typical for these permits. Consider filing earlier
+                  or budgeting extra buffer.
+                </p>
+                <ul className="space-y-2">
+                  {seasonalAlerts.map((a) => (
+                    <li
+                      key={a.label}
+                      className="flex items-baseline justify-between gap-3 text-xs border-t border-brand/20 pt-2"
+                    >
+                      <span className="font-semibold text-foreground">{a.label}</span>
+                      <span className="font-mono text-brand whitespace-nowrap">
+                        +{a.deltaPct}% · {a.medianDays}d vs {a.baselineDays}d typical
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {aggregate && (
+
               <>
                 <div className="bg-foreground text-background rounded-xl p-8">
                   <div className="flex items-start justify-between mb-6">
