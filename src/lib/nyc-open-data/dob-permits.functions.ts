@@ -2,13 +2,13 @@
 // dataset (w9ak-ipjd).
 //
 // Inclusion contract (applied server-side via SoQL on every aggregation):
-//   - filing_status = 'Approved'
-//   - approved_date IS NOT NULL      (dataset's equivalent of an "issue date"
-//                                     for an approved application; the schema
-//                                     has no separate `issue_date` field)
-//   - filing_date    IS NOT NULL
-//   - approved_date >= now - 24 months
-//   - approved_date >= filing_date   (drop bogus negative-lag rows)
+//   - first_permit_date IS NOT NULL   (the permit has been issued; the
+//                                      dataset has no separate `issue_date`
+//                                      field — `first_permit_date` is the
+//                                      semantic equivalent)
+//   - filing_date       IS NOT NULL
+//   - first_permit_date >= now - 24 months
+//   - first_permit_date >= filing_date   (drop bogus negative-lag rows)
 //
 // Approval Time (days) = date_diff_d(first_permit_date, filing_date).
 //
