@@ -131,7 +131,7 @@ function BenchmarksPage() {
                             : "text-[10px] uppercase tracking-wider text-ink-muted font-semibold"
                       }
                     >
-                      {delta === 0 ? "On city avg" : `${delta > 0 ? "+" : ""}${delta}% vs city`}
+                      {delta === 0 ? "On city median" : `${delta > 0 ? "+" : ""}${delta}% vs city median`}
                     </p>
                   </div>
                 </li>
