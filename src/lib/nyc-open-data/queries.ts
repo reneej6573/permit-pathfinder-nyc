@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getNeighborhoodStats, getRecentApprovals } from "./dob-permits.functions";
-import { getDcwpCategories, getDcwpPermitsForCategory } from "./dcwp-licenses.functions";
+import { getNeighborhoodStats, getRecentApprovals, getDobSeasonality } from "./dob-permits.functions";
+import { getDcwpCategories, getDcwpPermitsForCategory, getDcwpSeasonalityForCategory } from "./dcwp-licenses.functions";
+
 
 export const neighborhoodStatsQuery = queryOptions({
   queryKey: ["nyc-open-data", "dob", "neighborhood-stats"],
