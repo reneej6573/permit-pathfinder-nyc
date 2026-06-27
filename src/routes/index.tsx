@@ -222,7 +222,7 @@ function ExplorerPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur border border-edge rounded-md px-3 py-2 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted mb-1.5">
-                    Avg days, filing → issued
+                    Typical wait, filing → issued
                   </p>
                   <div
                     className="h-2 w-44 rounded-sm"
