@@ -19,7 +19,7 @@ export const DATASETS = {
     domain: "data.cityofnewyork.us",
     endpoint: "https://data.cityofnewyork.us/resource/w9ak-ipjd.json",
     description:
-      "Job application filings submitted through DOB NOW. Includes filing/approval dates, first permit issuance dates, work-type flags, and geocoded locations. The app filters to records that are both approved (approved_date IS NOT NULL) and have an issued permit (first_permit_date IS NOT NULL).",
+      "Job application filings submitted through DOB NOW. The app filters server-side to records where filing_status='Approved' with non-null filing_date and approved_date, approved within the last 24 months, and approved_date >= filing_date. Approval Time (days) = approved_date - filing_date. (The dataset has no separate `issue_date` field; `approved_date` is the closest semantic equivalent for an approved application.)",
     recentSinceIso: "2023-01-01",
   },
 } as const satisfies Record<string, DatasetDescriptor>;
