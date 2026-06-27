@@ -197,39 +197,55 @@ function ExplorerPage() {
                   const days = n.days[permit];
                   const delta = cityAvg > 0 ? Math.round(((days - cityAvg) / cityAvg) * 100) : 0;
                   const faster = delta < 0;
+                  const isSelected = n.slug === slug;
                   return (
-                    <li key={n.slug} className="p-4 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="size-10 bg-surface rounded grid place-items-center font-display font-bold text-ink-muted text-xs shrink-0">
-                          {n.code}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate">
-                            {n.name} <span className="text-ink-muted font-normal">• {n.borough} · {n.zips[0]}</span>
-                          </p>
-                          <p className="text-xs text-ink-muted truncate">
-                            Bottleneck: {n.primaryBottleneck}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p
-                          className={
-                            faster
-                              ? "text-sm font-display font-bold text-success"
-                              : delta > 10
-                                ? "text-sm font-display font-bold text-brand"
-                                : "text-sm font-display font-bold text-foreground"
+                    <li key={n.slug}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlug(n.slug);
+                          if (typeof window !== "undefined") {
+                            window.scrollTo({ top: 0, behavior: "smooth" });
                           }
-                        >
-                          {days} days
-                        </p>
-                        <p className="text-[10px] uppercase tracking-wider text-ink-muted">
-                          {delta === 0
-                            ? "On city average"
-                            : `${faster ? "" : "+"}${delta}% vs city avg`}
-                        </p>
-                      </div>
+                        }}
+                        aria-pressed={isSelected}
+                        className={
+                          "w-full text-left p-4 flex items-center justify-between gap-4 transition-colors hover:bg-surface/60 focus:outline-none focus:bg-surface/60 " +
+                          (isSelected ? "bg-surface" : "")
+                        }
+                      >
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="size-10 bg-surface rounded grid place-items-center font-display font-bold text-ink-muted text-xs shrink-0">
+                            {n.code}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">
+                              {n.name} <span className="text-ink-muted font-normal">• {n.borough} · {n.zips[0]}</span>
+                            </p>
+                            <p className="text-xs text-ink-muted truncate">
+                              Bottleneck: {n.primaryBottleneck}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p
+                            className={
+                              faster
+                                ? "text-sm font-display font-bold text-success"
+                                : delta > 10
+                                  ? "text-sm font-display font-bold text-brand"
+                                  : "text-sm font-display font-bold text-foreground"
+                            }
+                          >
+                            {days} days
+                          </p>
+                          <p className="text-[10px] uppercase tracking-wider text-ink-muted">
+                            {delta === 0
+                              ? "On city average"
+                              : `${faster ? "" : "+"}${delta}% vs city avg`}
+                          </p>
+                        </div>
+                      </button>
                     </li>
                   );
                 })}
