@@ -35,3 +35,21 @@ export function dcwpPermitsForCategoryQuery(category: string) {
     gcTime: 24 * 60 * 60 * 1000,
   });
 }
+
+export const dobSeasonalityQuery = queryOptions({
+  queryKey: ["nyc-open-data", "dob", "seasonality"],
+  queryFn: () => getDobSeasonality(),
+  staleTime: 6 * 60 * 60 * 1000,
+  gcTime: 24 * 60 * 60 * 1000,
+});
+
+export function dcwpSeasonalityForCategoryQuery(category: string) {
+  return queryOptions({
+    queryKey: ["nyc-open-data", "dcwp", "seasonality", category],
+    queryFn: () => getDcwpSeasonalityForCategory({ data: { category } }),
+    enabled: !!category,
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+}
+
