@@ -204,9 +204,6 @@ function ExplorerPage() {
                         type="button"
                         onClick={() => {
                           setSlug(n.slug);
-                          if (typeof window !== "undefined") {
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }
                         }}
                         aria-pressed={isSelected}
                         className={
