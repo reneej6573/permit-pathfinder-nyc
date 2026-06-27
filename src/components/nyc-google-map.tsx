@@ -184,19 +184,46 @@ export function NycGoogleMap({ neighborhoods, permit, selectedSlug, onSelect }: 
     });
   }, [ready, neighborhoods, permit, selectedSlug]);
 
-  // Zoom into selection
+  // Zoom into selection, or fit bounds to the visible (filtered) neighborhoods.
   useEffect(() => {
     const map = mapRef.current;
+    const data = dataLayerRef.current;
     if (!map) return;
     const sel = neighborhoods.find((n) => n.slug === selectedSlug);
     if (sel) {
       map.panTo({ lat: sel.lat, lng: sel.lng });
       map.setZoom(14);
-    } else {
+      return;
+    }
+    if (!ready || neighborhoods.length === 0) {
       map.panTo({ lat: 40.7308, lng: -73.9973 });
       map.setZoom(11);
+      return;
     }
-  }, [selectedSlug, neighborhoods]);
+    const zips = new Set<string>();
+    for (const n of neighborhoods) for (const z of n.zips) zips.add(z);
+    const bounds = new window.google!.maps.LatLngBounds();
+    let hasPoly = false;
+    if (data) {
+      data.forEach((feature) => {
+        const zip = feature.getProperty("zip") as string | undefined;
+        if (!zip || !zips.has(zip)) return;
+        const geom = feature.getGeometry();
+        if (!geom) return;
+        geom.forEachLatLng((latLng) => {
+          bounds.extend(latLng);
+          hasPoly = true;
+        });
+      });
+    }
+    if (!hasPoly) {
+      for (const n of neighborhoods) bounds.extend({ lat: n.lat, lng: n.lng });
+    }
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, 32);
+    }
+  }, [selectedSlug, neighborhoods, ready]);
+
 
   return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
 }
