@@ -83,7 +83,7 @@ export interface Neighborhood {
   lat: number;
   lng: number;
   permitCount: number;
-  // Avg approval-time (days) per permit type in this ZIP.
+  // Median approval-time (days) per permit type in this ZIP.
   days: Record<PermitType, number>;
   primaryBottleneck: string;
   trend: number; // % change vs prior window (positive = slower)
