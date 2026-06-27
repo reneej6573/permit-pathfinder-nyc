@@ -89,7 +89,7 @@ function ExplorerPage() {
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
             Wait times are computed live from the City's DOB NOW dataset — {neighborhoods.length}{" "}
-            ZIPs ranked by average days from approval to permit issuance.
+            ZIPs ranked by median days from filing to permit issuance.
           </p>
         </header>
 
