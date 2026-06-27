@@ -10,7 +10,7 @@
 //   - approved_date >= now - 24 months
 //   - approved_date >= filing_date   (drop bogus negative-lag rows)
 //
-// Approval Time (days) = date_diff_d(approved_date, filing_date).
+// Approval Time (days) = date_diff_d(first_permit_date, filing_date).
 //
 // All aggregations run server-side so the client never downloads the raw
 // dataset. Results are cached in memory per warm server instance and again
@@ -171,7 +171,7 @@ async function loadZipLagForPermit(permit: PermitType) {
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select:
-        "postcode, avg(date_diff_d(approved_date, filing_date)) as avg_days, count(*) as cnt",
+        "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days, count(*) as cnt",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
       $group: "postcode",
       $having: "cnt > 3",
@@ -186,7 +186,7 @@ async function loadCityAvgForPermit(permit: PermitType) {
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
-      $select: "avg(date_diff_d(approved_date, filing_date)) as avg_days",
+      $select: "avg(date_diff_d(first_permit_date, filing_date)) as avg_days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
       $limit: 1,
     },
@@ -197,7 +197,7 @@ async function loadCityAvgForPermit(permit: PermitType) {
 
 async function loadTrend(midIso: string) {
   const baseSelect =
-    "postcode, avg(date_diff_d(approved_date, filing_date)) as avg_days";
+    "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days";
   const recent = await fetchSocrata<TrendRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
