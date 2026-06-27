@@ -34,7 +34,11 @@ export const Route = createFileRoute("/predictor")({
 function formatLaunchWindow(days: number) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 function addDays(base: Date, days: number) {
   const d = new Date(base);
@@ -256,7 +260,7 @@ function PredictorPage() {
                   <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-6">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest opacity-60">
-                        Earliest launch
+                        Earliest
                       </p>
                       <p className="font-display font-bold text-lg mt-1">
                         {formatLaunchWindow(aggregate.min)}
@@ -264,7 +268,7 @@ function PredictorPage() {
                     </div>
                     <div>
                       <p className="text-[10px] uppercase tracking-widest opacity-60">
-                        Realistic launch
+                        Realistic
                       </p>
                       <p className="font-display font-bold text-lg mt-1 text-brand">
                         {formatLaunchWindow(aggregate.expected)}
