@@ -219,32 +219,48 @@ async function loadCityMedianForPermit(permit: PermitType) {
   return Number.isFinite(v) ? Math.max(1, v) : 30;
 }
 
+function computeMedianMap(rows: TrendDayRow[]): Map<string, number> {
+  const zipDays = new Map<string, number[]>();
+  for (const r of rows) {
+    const zip = norm(r.postcode);
+    const days = num(r.days);
+    if (!zip || !Number.isFinite(days) || days < 0) continue;
+    const arr = zipDays.get(zip) ?? [];
+    arr.push(days);
+    zipDays.set(zip, arr);
+  }
+  const out = new Map<string, number>();
+  for (const [zip, arr] of zipDays) {
+    if (arr.length < 2) continue;
+    arr.sort((a, b) => a - b);
+    out.set(zip, Math.max(1, medianOf(arr)));
+  }
+  return out;
+}
+
 async function loadTrend(midIso: string) {
-  const baseSelect =
-    "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days";
-  const recent = await fetchSocrata<TrendRow>({
-    datasetId: DATASET.id,
-    cacheTtlMs: 6 * 60 * 60 * 1000,
-    params: {
-      $select: baseSelect,
-      $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
-      $group: "postcode",
-      $limit: 5000,
-    },
-  });
-  const prior = await fetchSocrata<TrendRow>({
-    datasetId: DATASET.id,
-    cacheTtlMs: 6 * 60 * 60 * 1000,
-    params: {
-      $select: baseSelect,
-      $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
-      $group: "postcode",
-      $limit: 5000,
-    },
-  });
-  const recentMap = new Map(recent.map((r) => [norm(r.postcode), num(r.avg_days)]));
-  const priorMap = new Map(prior.map((r) => [norm(r.postcode), num(r.avg_days)]));
-  return { recentMap, priorMap };
+  const baseSelect = "postcode, date_diff_d(first_permit_date, filing_date) as days";
+  const [recent, prior] = await Promise.all([
+    fetchSocrata<TrendDayRow>({
+      datasetId: DATASET.id,
+      cacheTtlMs: 6 * 60 * 60 * 1000,
+      params: {
+        $select: baseSelect,
+        $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
+        $limit: 50000,
+      },
+    }),
+    fetchSocrata<TrendDayRow>({
+      datasetId: DATASET.id,
+      cacheTtlMs: 6 * 60 * 60 * 1000,
+      params: {
+        $select: baseSelect,
+        $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
+        $limit: 50000,
+      },
+    }),
+  ]);
+  return { recentMap: computeMedianMap(recent), priorMap: computeMedianMap(prior) };
 }
 
 export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(async () => {
