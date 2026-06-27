@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getNeighborhoodStats, getRecentApprovals } from "./dob-permits.functions";
-import { getDcwpCategories, getDcwpPermitsForCategory } from "./dcwp-licenses.functions";
+import { getNeighborhoodStats, getRecentApprovals, getDobSeasonality } from "./dob-permits.functions";
+import { getDcwpCategories, getDcwpPermitsForCategory, getDcwpSeasonalityForCategory } from "./dcwp-licenses.functions";
+
 
 export const neighborhoodStatsQuery = queryOptions({
   queryKey: ["nyc-open-data", "dob", "neighborhood-stats"],
@@ -34,3 +35,21 @@ export function dcwpPermitsForCategoryQuery(category: string) {
     gcTime: 24 * 60 * 60 * 1000,
   });
 }
+
+export const dobSeasonalityQuery = queryOptions({
+  queryKey: ["nyc-open-data", "dob", "seasonality"],
+  queryFn: () => getDobSeasonality(),
+  staleTime: 6 * 60 * 60 * 1000,
+  gcTime: 24 * 60 * 60 * 1000,
+});
+
+export function dcwpSeasonalityForCategoryQuery(category: string) {
+  return queryOptions({
+    queryKey: ["nyc-open-data", "dcwp", "seasonality", category],
+    queryFn: () => getDcwpSeasonalityForCategory({ data: { category } }),
+    enabled: !!category,
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
+  });
+}
+

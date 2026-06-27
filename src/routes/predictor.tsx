@@ -11,7 +11,10 @@ import {
   neighborhoodStatsQuery,
   dcwpCategoriesQuery,
   dcwpPermitsForCategoryQuery,
+  dobSeasonalityQuery,
+  dcwpSeasonalityForCategoryQuery,
 } from "@/lib/nyc-open-data/queries";
+
 
 export const Route = createFileRoute("/predictor")({
   head: () => ({
@@ -153,6 +156,57 @@ function PredictorPage() {
     () => [...dobEstimates, ...dcwpEstimates],
     [dobEstimates, dcwpEstimates],
   );
+
+  // ---- Seasonal filing pattern alerts -------------------------------------
+  const dobSeasonalityResult = useQuery(dobSeasonalityQuery);
+  const dcwpSeasonalityResult = useQuery(dcwpSeasonalityForCategoryQuery(selectedCategory));
+
+  const filingMonth = new Date().getMonth() + 1; // 1-12
+  const monthName = new Date().toLocaleString("en-US", { month: "long" });
+
+  const seasonalAlerts = useMemo(() => {
+    const alerts: { label: string; deltaPct: number; medianDays: number; baselineDays: number }[] = [];
+    const dobAll = dobSeasonalityResult.data ?? [];
+    for (const permit of selectedPermits) {
+      const s = dobAll.find((x) => x.permit === permit);
+      const m = s?.months.find((mm) => mm.month === filingMonth);
+      if (s && m && m.deltaPct >= 15) {
+        alerts.push({
+          label: permit,
+          deltaPct: m.deltaPct,
+          medianDays: m.medianDays,
+          baselineDays: s.baselineDays,
+        });
+      }
+    }
+    const dcwpAll = dcwpSeasonalityResult.data ?? [];
+    if (selectedCategory) {
+      for (const id of dcwpSelectedIds) {
+        const lt = dcwpPermits.find((p) => p.id === id)?.licenseType;
+        if (!lt) continue;
+        const s = dcwpAll.find((x) => x.licenseType === lt);
+        const m = s?.months.find((mm) => mm.month === filingMonth);
+        if (s && m && m.deltaPct >= 15) {
+          alerts.push({
+            label: `${selectedCategory} — ${lt}`,
+            deltaPct: m.deltaPct,
+            medianDays: m.medianDays,
+            baselineDays: s.baselineDays,
+          });
+        }
+      }
+    }
+    return alerts.sort((a, b) => b.deltaPct - a.deltaPct);
+  }, [
+    dobSeasonalityResult.data,
+    dcwpSeasonalityResult.data,
+    selectedPermits,
+    selectedCategory,
+    dcwpSelectedIds,
+    dcwpPermits,
+    filingMonth,
+  ]);
+
 
   const aggregate = useMemo(() => {
     if (perPermit.length === 0) return null;
@@ -376,7 +430,7 @@ function PredictorPage() {
 
             <div>
               <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
-                Target Launch Date
+                Target Permit Readiness Date
               </label>
               <input
                 type="date"
@@ -386,13 +440,45 @@ function PredictorPage() {
                 className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
               />
               <p className="text-[11px] text-ink-muted mt-1.5">
-                When you'd like to open. We'll work backward to your application deadline.
+                When you need all permits in hand. We'll work backward to your filing deadline.
               </p>
             </div>
+
           </div>
 
           <div className="lg:col-span-3 space-y-6">
+            {seasonalAlerts.length > 0 && (
+              <div className="border-2 border-brand bg-brand/5 rounded-xl p-6">
+                <div className="flex items-baseline justify-between gap-4 mb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand">
+                    Seasonal filing pattern alert
+                  </p>
+                  <span className="text-[10px] font-mono text-ink-muted">
+                    Filing in {monthName}
+                  </span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed mb-3">
+                  Historically, applications filed in <span className="font-bold">{monthName}</span>{" "}
+                  take longer than the year-round typical for these permits. Consider filing earlier
+                  or budgeting extra buffer.
+                </p>
+                <ul className="space-y-2">
+                  {seasonalAlerts.map((a) => (
+                    <li
+                      key={a.label}
+                      className="flex items-baseline justify-between gap-3 text-xs border-t border-brand/20 pt-2"
+                    >
+                      <span className="font-semibold text-foreground">{a.label}</span>
+                      <span className="font-mono text-brand whitespace-nowrap">
+                        +{a.deltaPct}% · {a.medianDays}d vs {a.baselineDays}d typical
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {aggregate && (
+
               <>
                 <div className="bg-foreground text-background rounded-xl p-8">
                   <div className="flex items-start justify-between mb-6">
