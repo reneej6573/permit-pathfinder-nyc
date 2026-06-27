@@ -115,7 +115,7 @@ function BenchmarksPage() {
                       />
                       <div
                         className="absolute top-1/2 -translate-y-1/2 h-3 w-px bg-ink-muted/40"
-                        style={{ left: `${(avg / max) * 100}%` }}
+                        style={{ left: `${(cityMedian / max) * 100}%` }}
                         aria-hidden
                       />
                     </div>
