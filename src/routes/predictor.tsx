@@ -157,6 +157,57 @@ function PredictorPage() {
     [dobEstimates, dcwpEstimates],
   );
 
+  // ---- Seasonal filing pattern alerts -------------------------------------
+  const dobSeasonalityResult = useQuery(dobSeasonalityQuery);
+  const dcwpSeasonalityResult = useQuery(dcwpSeasonalityForCategoryQuery(selectedCategory));
+
+  const filingMonth = new Date().getMonth() + 1; // 1-12
+  const monthName = new Date().toLocaleString("en-US", { month: "long" });
+
+  const seasonalAlerts = useMemo(() => {
+    const alerts: { label: string; deltaPct: number; medianDays: number; baselineDays: number }[] = [];
+    const dobAll = dobSeasonalityResult.data ?? [];
+    for (const permit of selectedPermits) {
+      const s = dobAll.find((x) => x.permit === permit);
+      const m = s?.months.find((mm) => mm.month === filingMonth);
+      if (s && m && m.deltaPct >= 15) {
+        alerts.push({
+          label: permit,
+          deltaPct: m.deltaPct,
+          medianDays: m.medianDays,
+          baselineDays: s.baselineDays,
+        });
+      }
+    }
+    const dcwpAll = dcwpSeasonalityResult.data ?? [];
+    if (selectedCategory) {
+      for (const id of dcwpSelectedIds) {
+        const lt = dcwpPermits.find((p) => p.id === id)?.licenseType;
+        if (!lt) continue;
+        const s = dcwpAll.find((x) => x.licenseType === lt);
+        const m = s?.months.find((mm) => mm.month === filingMonth);
+        if (s && m && m.deltaPct >= 15) {
+          alerts.push({
+            label: `${selectedCategory} — ${lt}`,
+            deltaPct: m.deltaPct,
+            medianDays: m.medianDays,
+            baselineDays: s.baselineDays,
+          });
+        }
+      }
+    }
+    return alerts.sort((a, b) => b.deltaPct - a.deltaPct);
+  }, [
+    dobSeasonalityResult.data,
+    dcwpSeasonalityResult.data,
+    selectedPermits,
+    selectedCategory,
+    dcwpSelectedIds,
+    dcwpPermits,
+    filingMonth,
+  ]);
+
+
   const aggregate = useMemo(() => {
     if (perPermit.length === 0) return null;
     const critical = perPermit.reduce((a, b) => (b.expected > a.expected ? b : a));
