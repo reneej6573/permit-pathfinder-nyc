@@ -260,7 +260,7 @@ function PredictorPage() {
                   <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-6">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest opacity-60">
-                        Earliest launch
+                        Earliest
                       </p>
                       <p className="font-display font-bold text-lg mt-1">
                         {formatLaunchWindow(aggregate.min)}
