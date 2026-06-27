@@ -30,7 +30,7 @@ export const Route = createFileRoute("/benchmarks")({
 function BenchmarksPage() {
   const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
   const [permit, setPermit] = useState<PermitType>("General Construction");
-  const avg = stats.cityAvgByPermit[permit] ?? 0;
+  const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const sorted = useMemo(
     () => [...stats.neighborhoods].sort((a, b) => a.days[permit] - b.days[permit]).slice(0, 40),
     [stats.neighborhoods, permit],
