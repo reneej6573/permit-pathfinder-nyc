@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
@@ -507,21 +507,6 @@ function PredictorPage() {
                   </div>
                 )}
 
-                {approvalExpected && approvalEarliest && approvalLatest && (
-                  <div className="bg-background border border-edge rounded-xl p-6">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
-                      Estimated approval date (all permits in hand)
-                    </p>
-                    <p className="font-display text-3xl font-bold mt-2 leading-tight">
-                      {fmtFullDate(approvalExpected)}
-                    </p>
-                    <p className="text-xs text-ink-muted mt-2">
-                      If you file today. Range: {fmtFullDate(approvalEarliest)} →{" "}
-                      {fmtFullDate(approvalLatest)}.
-                    </p>
-                  </div>
-                )}
-
                 {targetLaunch && deadlineRecommended && deadlineLatest && (
                   <div
                     className={
@@ -560,6 +545,21 @@ function PredictorPage() {
                   </div>
                 )}
 
+                {approvalExpected && approvalEarliest && approvalLatest && (
+                  <div className="bg-background border border-edge rounded-xl p-6">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                      Estimated approval date (all permits in hand)
+                    </p>
+                    <p className="font-display text-3xl font-bold mt-2 leading-tight">
+                      {fmtFullDate(approvalExpected)}
+                    </p>
+                    <p className="text-xs text-ink-muted mt-2">
+                      If you file today. Range: {fmtFullDate(approvalEarliest)} →{" "}
+                      {fmtFullDate(approvalLatest)}.
+                    </p>
+                  </div>
+                )}
+
                 <div className="bg-background border border-edge rounded-xl p-5">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
                     Primary bottleneck
@@ -571,6 +571,13 @@ function PredictorPage() {
                     Schedule early submissions around this step to keep your timeline on track.
                   </p>
                 </div>
+
+                <Link
+                  to="/"
+                  className="block w-full text-center bg-brand text-brand-foreground font-bold py-3 rounded-md text-sm shadow-xl active:scale-[0.98] transition-transform hover:bg-brand/90"
+                >
+                  Explore other ZIP codes →
+                </Link>
               </>
             )}
           </div>
