@@ -111,12 +111,47 @@ function PredictorPage() {
   const totalSelected = selectedPermits.length + dcwpSelectedIds.length;
   const totalSuggested = selectedPermits.length + dcwpPermits.length;
 
-  const perPermit = useMemo(
+  const dobEstimates = useMemo(
     () =>
       selectedPermits
         .map((p) => estimateTimeline(slug, p, neighborhoods, stats.cityMedianByPermit))
-        .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e),
+        .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e)
+        .map((e) => ({
+          key: `dob:${e.permit}`,
+          label: e.permit,
+          source: "DOB" as const,
+          expected: e.expected,
+          min: e.min,
+          max: e.max,
+          confidence: e.confidence,
+          neighborhood: e.neighborhood,
+        })),
     [slug, selectedPermits, neighborhoods, stats.cityMedianByPermit],
+  );
+
+  const dcwpEstimates = useMemo(() => {
+    if (!selectedCategory) return [];
+    return dcwpPermits
+      .filter((p) => dcwpSelectedIds.includes(p.id) && p.avgDays > 0)
+      .map((p) => {
+        const expected = Math.max(1, p.avgDays);
+        const variance = Math.max(1, Math.round(expected * 0.18));
+        return {
+          key: `dcwp:${p.id}`,
+          label: `${p.licenseType} (DCWP)`,
+          source: "DCWP" as const,
+          expected,
+          min: Math.max(1, expected - variance),
+          max: expected + variance,
+          confidence: 80,
+          neighborhood: null as null | (typeof dobEstimates)[number]["neighborhood"],
+        };
+      });
+  }, [selectedCategory, dcwpPermits, dcwpSelectedIds, dobEstimates]);
+
+  const perPermit = useMemo(
+    () => [...dobEstimates, ...dcwpEstimates],
+    [dobEstimates, dcwpEstimates],
   );
 
   const aggregate = useMemo(() => {
@@ -124,15 +159,20 @@ function PredictorPage() {
     const critical = perPermit.reduce((a, b) => (b.expected > a.expected ? b : a));
     const min = Math.max(...perPermit.map((e) => e.min));
     const max = Math.max(...perPermit.map((e) => e.max));
+    const neighborhood =
+      critical.neighborhood ??
+      dobEstimates[0]?.neighborhood ??
+      neighborhoods.find((n) => n.slug === slug) ??
+      neighborhoods[0];
     return {
-      neighborhood: critical.neighborhood,
+      neighborhood,
       critical,
       expected: critical.expected,
       min,
       max,
       confidence: Math.min(...perPermit.map((e) => e.confidence)),
     };
-  }, [perPermit]);
+  }, [perPermit, dobEstimates, neighborhoods, slug]);
 
   const today = useMemo(() => {
     const d = new Date();
