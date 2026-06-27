@@ -46,12 +46,12 @@ function ExplorerPage() {
   const [slug, setSlug] = useState<string>(neighborhoods[0]?.slug ?? "");
 
   const estimate = useMemo(
-    () => estimateTimeline(slug, permit, neighborhoods, stats.cityAvgByPermit),
-    [slug, permit, neighborhoods, stats.cityAvgByPermit],
+    () => estimateTimeline(slug, permit, neighborhoods, stats.cityMedianByPermit),
+    [slug, permit, neighborhoods, stats.cityMedianByPermit],
   );
   const friction = useMemo(() => boroughFriction(neighborhoods, permit), [neighborhoods, permit]);
   const cityMaxFriction = Math.max(1, ...friction.map((f) => f.days));
-  const cityAvg = stats.cityAvgByPermit[permit] ?? 0;
+  const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const selected = useMemo(
     () => neighborhoods.find((n) => n.slug === slug),
     [neighborhoods, slug],
@@ -178,8 +178,8 @@ function ExplorerPage() {
                     ZIP ranking
                   </h2>
                   <p className="text-xs text-ink-muted mt-0.5">
-                    Avg days to issuance • City avg{" "}
-                    <span className="font-semibold text-foreground">{cityAvg}d</span>
+                    Median days to issuance • City median{" "}
+                    <span className="font-semibold text-foreground">{cityMedian}d</span>
                   </p>
                 </div>
                 <select
@@ -195,7 +195,7 @@ function ExplorerPage() {
               <ul className="divide-y divide-edge">
                 {visibleNeighborhoods.map((n) => {
                   const days = n.days[permit];
-                  const delta = cityAvg > 0 ? Math.round(((days - cityAvg) / cityAvg) * 100) : 0;
+                  const delta = cityMedian > 0 ? Math.round(((days - cityMedian) / cityMedian) * 100) : 0;
                   const faster = delta < 0;
                   const isSelected = n.slug === slug;
                   return (
@@ -239,7 +239,7 @@ function ExplorerPage() {
                           <p className="text-[10px] uppercase tracking-wider text-ink-muted">
                             {delta === 0
                               ? "On city average"
-                              : `${faster ? "" : "+"}${delta}% vs city avg`}
+                              : `${faster ? "" : "+"}${delta}% vs city median`}
                           </p>
                         </div>
                       </button>
@@ -389,7 +389,7 @@ function ExplorerPage() {
                 ))}
               </div>
               <p className="mt-6 text-[10px] leading-relaxed text-ink-muted italic">
-                * Median avg approval→issuance days across ZIPs in each borough for{" "}
+                * Median approval→issuance days across ZIPs in each borough for{" "}
                 <span className="font-semibold">{permit}</span>.
               </p>
             </div>

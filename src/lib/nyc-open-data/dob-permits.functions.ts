@@ -83,7 +83,7 @@ export interface Neighborhood {
   lat: number;
   lng: number;
   permitCount: number;
-  // Avg approval-time (days) per permit type in this ZIP.
+  // Median approval-time (days) per permit type in this ZIP.
   days: Record<PermitType, number>;
   primaryBottleneck: string;
   trend: number; // % change vs prior window (positive = slower)
@@ -132,19 +132,26 @@ interface ZipMetaRow {
   cnt: string;
 }
 
-interface ZipLagRow {
+interface ZipDayRow {
   postcode: string;
-  avg_days: string;
-  cnt: string;
+  days: string;
 }
 
-interface CityAvgRow {
-  avg_days: string;
+interface CityDayRow {
+  days: string;
 }
 
-interface TrendRow {
+interface TrendDayRow {
   postcode: string;
-  avg_days: string;
+  days: string;
+}
+
+function medianOf(sorted: number[]): number {
+  if (sorted.length === 0) return NaN;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+    : sorted[mid];
 }
 
 async function loadZipMetadata(minCount: number, limit: number) {
@@ -165,61 +172,95 @@ async function loadZipMetadata(minCount: number, limit: number) {
 
 async function loadZipLagForPermit(permit: PermitType) {
   const col = PERMIT_TYPE_COLUMNS[permit];
-  return fetchSocrata<ZipLagRow>({
+  const rows = await fetchSocrata<ZipDayRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select:
-        "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days, count(*) as cnt",
+        "postcode, date_diff_d(first_permit_date, filing_date) as days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
-      $group: "postcode",
-      $having: "cnt > 3",
       $limit: 50000,
     },
   });
+  const zipDays = new Map<string, number[]>();
+  for (const r of rows) {
+    const zip = norm(r.postcode);
+    const days = num(r.days);
+    if (!zip || !Number.isFinite(days) || days < 0) continue;
+    const arr = zipDays.get(zip) ?? [];
+    arr.push(days);
+    zipDays.set(zip, arr);
+  }
+  const medianByZip = new Map<string, number>();
+  for (const [zip, arr] of zipDays) {
+    if (arr.length < 4) continue; // same threshold as old cnt > 3
+    arr.sort((a, b) => a - b);
+    medianByZip.set(zip, Math.max(1, medianOf(arr)));
+  }
+  return medianByZip;
 }
 
-async function loadCityAvgForPermit(permit: PermitType) {
+async function loadCityMedianForPermit(permit: PermitType) {
   const col = PERMIT_TYPE_COLUMNS[permit];
-  const rows = await fetchSocrata<CityAvgRow>({
+  const rows = await fetchSocrata<CityDayRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
-      $select: "avg(date_diff_d(first_permit_date, filing_date)) as avg_days",
+      $select: "date_diff_d(first_permit_date, filing_date) as days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
-      $limit: 1,
+      $limit: 50000,
     },
   });
-  const v = Number(rows[0]?.avg_days);
-  return Number.isFinite(v) ? Math.max(1, Math.round(v)) : 30;
+  const all = rows
+    .map((r) => num(r.days))
+    .filter((d) => Number.isFinite(d) && d >= 0)
+    .sort((a, b) => a - b);
+  const v = medianOf(all);
+  return Number.isFinite(v) ? Math.max(1, v) : 30;
+}
+
+function computeMedianMap(rows: TrendDayRow[]): Map<string, number> {
+  const zipDays = new Map<string, number[]>();
+  for (const r of rows) {
+    const zip = norm(r.postcode);
+    const days = num(r.days);
+    if (!zip || !Number.isFinite(days) || days < 0) continue;
+    const arr = zipDays.get(zip) ?? [];
+    arr.push(days);
+    zipDays.set(zip, arr);
+  }
+  const out = new Map<string, number>();
+  for (const [zip, arr] of zipDays) {
+    if (arr.length < 2) continue;
+    arr.sort((a, b) => a - b);
+    out.set(zip, Math.max(1, medianOf(arr)));
+  }
+  return out;
 }
 
 async function loadTrend(midIso: string) {
-  const baseSelect =
-    "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days";
-  const recent = await fetchSocrata<TrendRow>({
-    datasetId: DATASET.id,
-    cacheTtlMs: 6 * 60 * 60 * 1000,
-    params: {
-      $select: baseSelect,
-      $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
-      $group: "postcode",
-      $limit: 5000,
-    },
-  });
-  const prior = await fetchSocrata<TrendRow>({
-    datasetId: DATASET.id,
-    cacheTtlMs: 6 * 60 * 60 * 1000,
-    params: {
-      $select: baseSelect,
-      $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
-      $group: "postcode",
-      $limit: 5000,
-    },
-  });
-  const recentMap = new Map(recent.map((r) => [norm(r.postcode), num(r.avg_days)]));
-  const priorMap = new Map(prior.map((r) => [norm(r.postcode), num(r.avg_days)]));
-  return { recentMap, priorMap };
+  const baseSelect = "postcode, date_diff_d(first_permit_date, filing_date) as days";
+  const [recent, prior] = await Promise.all([
+    fetchSocrata<TrendDayRow>({
+      datasetId: DATASET.id,
+      cacheTtlMs: 6 * 60 * 60 * 1000,
+      params: {
+        $select: baseSelect,
+        $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
+        $limit: 50000,
+      },
+    }),
+    fetchSocrata<TrendDayRow>({
+      datasetId: DATASET.id,
+      cacheTtlMs: 6 * 60 * 60 * 1000,
+      params: {
+        $select: baseSelect,
+        $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
+        $limit: 50000,
+      },
+    }),
+  ]);
+  return { recentMap: computeMedianMap(recent), priorMap: computeMedianMap(prior) };
 }
 
 export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(async () => {
@@ -228,17 +269,16 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
   const [meta, perPermitLag, perPermitCity, trend] = await Promise.all([
     loadZipMetadata(30, 250),
     Promise.all(PERMIT_TYPES.map((p) => loadZipLagForPermit(p))),
-    Promise.all(PERMIT_TYPES.map((p) => loadCityAvgForPermit(p))),
+    Promise.all(PERMIT_TYPES.map((p) => loadCityMedianForPermit(p))),
     loadTrend(midIso),
   ]);
 
   const lagByZip = new Map<string, Partial<Record<PermitType, number>>>();
   const bottleneckByZip = new Map<string, { type: PermitType; days: number }>();
   PERMIT_TYPES.forEach((permit, i) => {
-    for (const r of perPermitLag[i]) {
-      const zip = norm(r.postcode);
+    const map = perPermitLag[i];
+    for (const [zip, days] of map) {
       if (!zip) continue;
-      const days = Math.max(1, Math.round(num(r.avg_days)));
       if (!Number.isFinite(days)) continue;
       let m = lagByZip.get(zip);
       if (!m) {
@@ -251,7 +291,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
     }
   });
 
-  const cityAvgByPermit = Object.fromEntries(
+  const cityMedianByPermit = Object.fromEntries(
     PERMIT_TYPES.map((p, i) => [p, perPermitCity[i]]),
   ) as Record<PermitType, number>;
 
@@ -271,7 +311,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
 
     const lagMap = lagByZip.get(zip) ?? {};
     const days = Object.fromEntries(
-      PERMIT_TYPES.map((p) => [p, lagMap[p] ?? cityAvgByPermit[p] ?? 30]),
+      PERMIT_TYPES.map((p) => [p, lagMap[p] ?? cityMedianByPermit[p] ?? 30]),
     ) as Record<PermitType, number>;
 
     const bottleneck = bottleneckByZip.get(zip);
@@ -295,7 +335,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
       permitCount: Math.round(cnt),
       days,
       primaryBottleneck: bottleneck
-        ? `${bottleneck.type} review (avg ${bottleneck.days}d)`
+        ? `${bottleneck.type} review (median ${bottleneck.days}d)`
         : "Plan examiner intake",
       trend: trendPct,
     });
@@ -306,7 +346,7 @@ export const getNeighborhoodStats = createServerFn({ method: "GET" }).handler(as
 
   return {
     neighborhoods: top,
-    cityAvgByPermit,
+    cityMedianByPermit,
     sinceIso: WINDOW_START_ISO,
     fetchedAt: new Date().toISOString(),
   };
@@ -372,8 +412,8 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       },
     });
 
-    const cityAvgs = await Promise.all(PERMIT_TYPES.map((p) => loadCityAvgForPermit(p)));
-    const cityMap = new Map<string, number>(PERMIT_TYPES.map((p, i) => [p, cityAvgs[i]]));
+    const cityMedians = await Promise.all(PERMIT_TYPES.map((p) => loadCityMedianForPermit(p)));
+    const cityMap = new Map<string, number>(PERMIT_TYPES.map((p, i) => [p, cityMedians[i]]));
 
     const seen = new Set<string>();
     const approvals: RecentApproval[] = [];

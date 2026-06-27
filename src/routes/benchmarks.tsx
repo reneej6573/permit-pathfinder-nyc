@@ -30,7 +30,7 @@ export const Route = createFileRoute("/benchmarks")({
 function BenchmarksPage() {
   const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
   const [permit, setPermit] = useState<PermitType>("General Construction");
-  const avg = stats.cityAvgByPermit[permit] ?? 0;
+  const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const sorted = useMemo(
     () => [...stats.neighborhoods].sort((a, b) => a.days[permit] - b.days[permit]).slice(0, 40),
     [stats.neighborhoods, permit],
@@ -80,15 +80,15 @@ function BenchmarksPage() {
           <div className="px-6 py-4 border-b border-edge flex items-center justify-between">
             <h2 className="font-display font-bold text-sm uppercase tracking-wider">{permit}</h2>
             <p className="text-xs text-ink-muted">
-              City average:{" "}
-              <span className="font-display font-bold text-foreground">{avg} days</span>
+              City median:{" "}
+              <span className="font-display font-bold text-foreground">{cityMedian} days</span>
             </p>
           </div>
 
           <ul>
             {sorted.map((n) => {
               const days = n.days[permit];
-              const delta = avg > 0 ? Math.round(((days - avg) / avg) * 100) : 0;
+              const delta = cityMedian > 0 ? Math.round(((days - cityMedian) / cityMedian) * 100) : 0;
               const widthPct = (days / max) * 100;
               return (
                 <li
@@ -115,7 +115,7 @@ function BenchmarksPage() {
                       />
                       <div
                         className="absolute top-1/2 -translate-y-1/2 h-3 w-px bg-ink-muted/40"
-                        style={{ left: `${(avg / max) * 100}%` }}
+                        style={{ left: `${(cityMedian / max) * 100}%` }}
                         aria-hidden
                       />
                     </div>
@@ -131,7 +131,7 @@ function BenchmarksPage() {
                             : "text-[10px] uppercase tracking-wider text-ink-muted font-semibold"
                       }
                     >
-                      {delta === 0 ? "On city avg" : `${delta > 0 ? "+" : ""}${delta}% vs city`}
+                      {delta === 0 ? "On city median" : `${delta > 0 ? "+" : ""}${delta}% vs city median`}
                     </p>
                   </div>
                 </li>
