@@ -453,3 +453,62 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
 
     return approvals;
   });
+
+// ---- Seasonality (citywide, per permit type) -----------------------------
+
+export interface DobSeasonality {
+  permit: PermitType;
+  baselineDays: number;
+  months: { month: number; medianDays: number; sampleSize: number; deltaPct: number }[];
+}
+
+async function loadDobSeasonalityForPermit(permit: PermitType): Promise<DobSeasonality> {
+  const col = PERMIT_TYPE_COLUMNS[permit];
+  const rows = await fetchSocrata<{ mo: string; days: string }>({
+    datasetId: DATASET.id,
+    cacheTtlMs: 6 * 60 * 60 * 1000,
+    params: {
+      $select:
+        "date_extract_m(filing_date) as mo, date_diff_d(first_permit_date, filing_date) as days",
+      $where: `${BASE_FILTER} AND upper(${col})='YES'`,
+      $limit: 50000,
+    },
+  });
+  const byMonth = new Map<number, number[]>();
+  const all: number[] = [];
+  for (const r of rows) {
+    const mo = Number(r.mo);
+    const d = num(r.days);
+    if (!Number.isFinite(mo) || mo < 1 || mo > 12) continue;
+    if (!Number.isFinite(d) || d < 0) continue;
+    let arr = byMonth.get(mo);
+    if (!arr) {
+      arr = [];
+      byMonth.set(mo, arr);
+    }
+    arr.push(d);
+    all.push(d);
+  }
+  const sortedAll = all.slice().sort((a, b) => a - b);
+  const baseline = medianOf(sortedAll);
+  const months: DobSeasonality["months"] = [];
+  for (let mo = 1; mo <= 12; mo++) {
+    const arr = byMonth.get(mo);
+    if (!arr || arr.length < 10) continue;
+    arr.sort((a, b) => a - b);
+    const med = medianOf(arr);
+    months.push({
+      month: mo,
+      medianDays: Math.round(med),
+      sampleSize: arr.length,
+      deltaPct: baseline > 0 ? Math.round(((med - baseline) / baseline) * 100) : 0,
+    });
+  }
+  return { permit, baselineDays: Math.round(baseline || 0), months };
+}
+
+export const getDobSeasonality = createServerFn({ method: "GET" }).handler(async () => {
+  const all = await Promise.all(PERMIT_TYPES.map((p) => loadDobSeasonalityForPermit(p)));
+  return all;
+});
+
