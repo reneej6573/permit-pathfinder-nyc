@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { getNeighborhoodStats, getRecentApprovals } from "./dob-permits.functions";
+import { getDcwpCategories, getDcwpPermitsForCategory } from "./dcwp-licenses.functions";
 
 export const neighborhoodStatsQuery = queryOptions({
   queryKey: ["nyc-open-data", "dob", "neighborhood-stats"],
@@ -14,5 +15,22 @@ export function recentApprovalsQuery(input: { workType?: string; zip?: string; l
     queryFn: () => getRecentApprovals({ data: input }),
     staleTime: 15 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
+  });
+}
+
+export const dcwpCategoriesQuery = queryOptions({
+  queryKey: ["nyc-open-data", "dcwp", "categories"],
+  queryFn: () => getDcwpCategories(),
+  staleTime: 6 * 60 * 60 * 1000,
+  gcTime: 24 * 60 * 60 * 1000,
+});
+
+export function dcwpPermitsForCategoryQuery(category: string) {
+  return queryOptions({
+    queryKey: ["nyc-open-data", "dcwp", "permits", category],
+    queryFn: () => getDcwpPermitsForCategory({ data: { category } }),
+    enabled: !!category,
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }
