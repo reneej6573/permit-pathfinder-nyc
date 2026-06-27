@@ -238,8 +238,8 @@ function ExplorerPage() {
                           </p>
                           <p className="text-[10px] uppercase tracking-wider text-ink-muted">
                             {delta === 0
-                              ? "On city estimate"
-                              : `${faster ? "" : "+"}${delta}% vs city estimate`}
+                              ? "On city"
+                              : `${faster ? "" : "+"}${delta}% vs city`}
                           </p>
                         </div>
                       </button>
