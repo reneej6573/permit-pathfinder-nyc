@@ -73,9 +73,9 @@ function PredictorPage() {
   const perPermit = useMemo(
     () =>
       selectedPermits
-        .map((p) => estimateTimeline(slug, p, neighborhoods, stats.cityAvgByPermit))
+        .map((p) => estimateTimeline(slug, p, neighborhoods, stats.cityMedianByPermit))
         .filter((e): e is NonNullable<ReturnType<typeof estimateTimeline>> => !!e),
-    [slug, selectedPermits, neighborhoods, stats.cityAvgByPermit],
+    [slug, selectedPermits, neighborhoods, stats.cityMedianByPermit],
   );
 
   const aggregate = useMemo(() => {
