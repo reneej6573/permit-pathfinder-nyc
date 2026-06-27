@@ -132,19 +132,26 @@ interface ZipMetaRow {
   cnt: string;
 }
 
-interface ZipLagRow {
+interface ZipDayRow {
   postcode: string;
-  avg_days: string;
-  cnt: string;
+  days: string;
 }
 
-interface CityAvgRow {
-  avg_days: string;
+interface CityDayRow {
+  days: string;
 }
 
-interface TrendRow {
+interface TrendDayRow {
   postcode: string;
-  avg_days: string;
+  days: string;
+}
+
+function medianOf(sorted: number[]): number {
+  if (sorted.length === 0) return NaN;
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+    : sorted[mid];
 }
 
 async function loadZipMetadata(minCount: number, limit: number) {
