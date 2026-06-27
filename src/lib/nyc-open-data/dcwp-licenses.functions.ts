@@ -59,41 +59,52 @@ export const getDcwpCategories = createServerFn({ method: "GET" }).handler(async
   return out;
 });
 
+function medianOf(values: number[]): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 export const getDcwpPermitsForCategory = createServerFn({ method: "GET" })
   .inputValidator((d: { category: string }) => ({ category: String(d?.category ?? "").trim() }))
   .handler(async ({ data }) => {
     if (!data.category) return [] as DcwpPermit[];
     const rows = await fetchSocrata<{
-      business_category: string;
       license_type: string;
-      cnt: string;
-      avg_days: string;
+      days: string;
     }>({
       datasetId: DATASET_ID,
       cacheTtlMs: 6 * 60 * 60 * 1000,
       params: {
-        $select:
-          "business_category, license_type, count(*) as cnt, avg(date_diff_d(date_closed, submission_date)) as avg_days",
+        $select: "license_type, date_diff_d(date_closed, submission_date) as days",
         $where: `${BASE_FILTER} AND business_category='${escSql(data.category)}'`,
-        $group: "business_category, license_type",
-        $order: "cnt DESC",
-        $limit: 50,
+        $limit: 50000,
       },
     });
-    const out: DcwpPermit[] = [];
+    const buckets = new Map<string, number[]>();
     for (const r of rows) {
-      const cat = norm(r.business_category);
       const lt = norm(r.license_type) || "License";
-      if (!cat) continue;
-      const cnt = Number(r.cnt);
-      const avg = Number(r.avg_days);
+      const d = Number(r.days);
+      if (!Number.isFinite(d) || d < 0) continue;
+      let arr = buckets.get(lt);
+      if (!arr) {
+        arr = [];
+        buckets.set(lt, arr);
+      }
+      arr.push(d);
+    }
+    const out: DcwpPermit[] = [];
+    for (const [lt, arr] of buckets) {
+      const med = medianOf(arr);
       out.push({
-        id: `${cat}::${lt}`,
-        category: cat,
+        id: `${data.category}::${lt}`,
+        category: data.category,
         licenseType: lt,
-        count: Number.isFinite(cnt) ? cnt : 0,
-        avgDays: Number.isFinite(avg) ? Math.max(1, Math.round(avg)) : 0,
+        count: arr.length,
+        avgDays: Math.max(1, Math.round(med)),
       });
     }
-    return out;
+    out.sort((a, b) => b.count - a.count);
+    return out.slice(0, 50);
   });
