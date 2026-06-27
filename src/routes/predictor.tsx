@@ -138,7 +138,7 @@ function PredictorPage() {
         const variance = Math.max(1, Math.round(expected * 0.18));
         return {
           key: `dcwp:${p.id}`,
-          label: `${p.licenseType} (DCWP)`,
+          label: `${p.category} — ${p.licenseType}`,
           source: "DCWP" as const,
           expected,
           min: Math.max(1, expected - variance),
