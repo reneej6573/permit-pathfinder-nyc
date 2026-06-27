@@ -66,11 +66,10 @@ function isoDaysAgo(days: number) {
 const WINDOW_START_ISO = isoDaysAgo(365 * 2);
 
 const BASE_FILTER = [
-  "filing_status='Approved'",
-  "approved_date IS NOT NULL",
+  "first_permit_date IS NOT NULL",
   "filing_date IS NOT NULL",
-  `approved_date >= '${WINDOW_START_ISO}T00:00:00'`,
-  "approved_date >= filing_date",
+  `first_permit_date >= '${WINDOW_START_ISO}T00:00:00'`,
+  "first_permit_date >= filing_date",
 ].join(" AND ");
 
 // ---- Types ---------------------------------------------------------------
