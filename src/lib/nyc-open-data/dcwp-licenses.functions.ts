@@ -107,4 +107,78 @@ export const getDcwpPermitsForCategory = createServerFn({ method: "GET" })
     }
     out.sort((a, b) => b.count - a.count);
     return out.slice(0, 50);
+});
+
+// ---- Seasonality ---------------------------------------------------------
+
+export interface DcwpSeasonality {
+  licenseType: string;
+  baselineDays: number;
+  months: { month: number; medianDays: number; sampleSize: number; deltaPct: number }[];
+}
+
+export const getDcwpSeasonalityForCategory = createServerFn({ method: "GET" })
+  .inputValidator((d: { category: string }) => ({ category: String(d?.category ?? "").trim() }))
+  .handler(async ({ data }): Promise<DcwpSeasonality[]> => {
+    if (!data.category) return [];
+    const rows = await fetchSocrata<{
+      license_type: string;
+      mo: string;
+      days: string;
+    }>({
+      datasetId: DATASET_ID,
+      cacheTtlMs: 6 * 60 * 60 * 1000,
+      params: {
+        $select:
+          "license_type, date_extract_m(submission_date) as mo, date_diff_d(date_closed, submission_date) as days",
+        $where: `${BASE_FILTER} AND business_category='${escSql(data.category)}'`,
+        $limit: 50000,
+      },
+    });
+    const byType = new Map<string, Map<number, number[]>>();
+    const allByType = new Map<string, number[]>();
+    for (const r of rows) {
+      const lt = norm(r.license_type) || "License";
+      const mo = Number(r.mo);
+      const d = Number(r.days);
+      if (!Number.isFinite(mo) || mo < 1 || mo > 12) continue;
+      if (!Number.isFinite(d) || d < 0) continue;
+      let m = byType.get(lt);
+      if (!m) {
+        m = new Map();
+        byType.set(lt, m);
+      }
+      let arr = m.get(mo);
+      if (!arr) {
+        arr = [];
+        m.set(mo, arr);
+      }
+      arr.push(d);
+      let all = allByType.get(lt);
+      if (!all) {
+        all = [];
+        allByType.set(lt, all);
+      }
+      all.push(d);
+    }
+    const out: DcwpSeasonality[] = [];
+    for (const [lt, m] of byType) {
+      const baseline = medianOf(allByType.get(lt) ?? []);
+      if (baseline <= 0) continue;
+      const months: DcwpSeasonality["months"] = [];
+      for (let mo = 1; mo <= 12; mo++) {
+        const arr = m.get(mo);
+        if (!arr || arr.length < 5) continue;
+        const med = medianOf(arr);
+        months.push({
+          month: mo,
+          medianDays: Math.round(med),
+          sampleSize: arr.length,
+          deltaPct: Math.round(((med - baseline) / baseline) * 100),
+        });
+      }
+      out.push({ licenseType: lt, baselineDays: Math.round(baseline), months });
+    }
+    return out;
   });
+
