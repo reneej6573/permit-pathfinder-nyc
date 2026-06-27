@@ -195,7 +195,7 @@ function ExplorerPage() {
               <ul className="divide-y divide-edge">
                 {visibleNeighborhoods.map((n) => {
                   const days = n.days[permit];
-                  const delta = cityAvg > 0 ? Math.round(((days - cityAvg) / cityAvg) * 100) : 0;
+                  const delta = cityMedian > 0 ? Math.round(((days - cityMedian) / cityMedian) * 100) : 0;
                   const faster = delta < 0;
                   const isSelected = n.slug === slug;
                   return (
