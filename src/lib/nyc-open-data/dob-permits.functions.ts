@@ -2,15 +2,15 @@
 // dataset (w9ak-ipjd).
 //
 // Inclusion contract (applied server-side via SoQL on every aggregation):
-//   - filing_status = 'Approved'
-//   - approved_date IS NOT NULL      (dataset's equivalent of an "issue date"
-//                                     for an approved application; the schema
-//                                     has no separate `issue_date` field)
-//   - filing_date    IS NOT NULL
-//   - approved_date >= now - 24 months
-//   - approved_date >= filing_date   (drop bogus negative-lag rows)
+//   - first_permit_date IS NOT NULL   (the permit has been issued; the
+//                                      dataset has no separate `issue_date`
+//                                      field — `first_permit_date` is the
+//                                      semantic equivalent)
+//   - filing_date       IS NOT NULL
+//   - first_permit_date >= now - 24 months
+//   - first_permit_date >= filing_date   (drop bogus negative-lag rows)
 //
-// Approval Time (days) = date_diff_d(approved_date, filing_date).
+// Approval Time (days) = date_diff_d(first_permit_date, filing_date).
 //
 // All aggregations run server-side so the client never downloads the raw
 // dataset. Results are cached in memory per warm server instance and again
@@ -66,11 +66,10 @@ function isoDaysAgo(days: number) {
 const WINDOW_START_ISO = isoDaysAgo(365 * 2);
 
 const BASE_FILTER = [
-  "filing_status='Approved'",
-  "approved_date IS NOT NULL",
+  "first_permit_date IS NOT NULL",
   "filing_date IS NOT NULL",
-  `approved_date >= '${WINDOW_START_ISO}T00:00:00'`,
-  "approved_date >= filing_date",
+  `first_permit_date >= '${WINDOW_START_ISO}T00:00:00'`,
+  "first_permit_date >= filing_date",
 ].join(" AND ");
 
 // ---- Types ---------------------------------------------------------------
@@ -171,7 +170,7 @@ async function loadZipLagForPermit(permit: PermitType) {
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select:
-        "postcode, avg(date_diff_d(approved_date, filing_date)) as avg_days, count(*) as cnt",
+        "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days, count(*) as cnt",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
       $group: "postcode",
       $having: "cnt > 3",
@@ -186,7 +185,7 @@ async function loadCityAvgForPermit(permit: PermitType) {
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
-      $select: "avg(date_diff_d(approved_date, filing_date)) as avg_days",
+      $select: "avg(date_diff_d(first_permit_date, filing_date)) as avg_days",
       $where: `${BASE_FILTER} AND upper(${col})='YES'`,
       $limit: 1,
     },
@@ -197,13 +196,13 @@ async function loadCityAvgForPermit(permit: PermitType) {
 
 async function loadTrend(midIso: string) {
   const baseSelect =
-    "postcode, avg(date_diff_d(approved_date, filing_date)) as avg_days";
+    "postcode, avg(date_diff_d(first_permit_date, filing_date)) as avg_days";
   const recent = await fetchSocrata<TrendRow>({
     datasetId: DATASET.id,
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select: baseSelect,
-      $where: `${BASE_FILTER} AND approved_date >= '${midIso}T00:00:00'`,
+      $where: `${BASE_FILTER} AND first_permit_date >= '${midIso}T00:00:00'`,
       $group: "postcode",
       $limit: 5000,
     },
@@ -213,7 +212,7 @@ async function loadTrend(midIso: string) {
     cacheTtlMs: 6 * 60 * 60 * 1000,
     params: {
       $select: baseSelect,
-      $where: `${BASE_FILTER} AND approved_date < '${midIso}T00:00:00'`,
+      $where: `${BASE_FILTER} AND first_permit_date < '${midIso}T00:00:00'`,
       $group: "postcode",
       $limit: 5000,
     },
@@ -322,7 +321,7 @@ interface RecentRow {
   nta: string;
   job_type: string;
   job_description: string;
-  approved_date: string;
+  first_permit_date: string;
   filing_date: string;
   general_construction_work_type_?: string;
   plumbing_work_type?: string;
@@ -357,7 +356,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       "nta",
       "job_type",
       "job_description",
-      "approved_date",
+      "first_permit_date",
       "filing_date",
       ...Object.values(PERMIT_TYPE_COLUMNS),
     ].join(", ");
@@ -368,7 +367,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       params: {
         $select: selectCols,
         $where: where.join(" AND "),
-        $order: "approved_date DESC",
+        $order: "first_permit_date DESC",
         $limit: limit * 2, // overfetch to allow client dedupe below
       },
     });
@@ -383,7 +382,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       if (!jfn || seen.has(jfn)) continue;
       seen.add(jfn);
 
-      const approved = norm(r.approved_date);
+      const approved = norm(r.first_permit_date);
       const filed = norm(r.filing_date);
       if (!approved || !filed) continue;
       const days = Math.round(
