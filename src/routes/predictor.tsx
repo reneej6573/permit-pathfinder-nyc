@@ -132,7 +132,7 @@ function PredictorPage() {
           </h1>
           <p className="text-ink-muted leading-relaxed text-pretty">
             Estimates are computed from the NYC Open Data DOB NOW Approved Permits dataset
-            (median days from filing to issuance per ZIP), adjusted for the 90-day trend.
+            (estimated days from filing to issuance per ZIP), adjusted for the 90-day trend.
           </p>
         </header>
 
