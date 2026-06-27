@@ -412,7 +412,7 @@ export const getRecentApprovals = createServerFn({ method: "GET" })
       },
     });
 
-    const cityAvgs = await Promise.all(PERMIT_TYPES.map((p) => loadCityAvgForPermit(p)));
+    const cityMedians = await Promise.all(PERMIT_TYPES.map((p) => loadCityMedianForPermit(p)));
     const cityMap = new Map<string, number>(PERMIT_TYPES.map((p, i) => [p, cityAvgs[i]]));
 
     const seen = new Set<string>();
