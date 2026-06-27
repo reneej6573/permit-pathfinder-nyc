@@ -526,7 +526,7 @@ function ExplorerPage() {
                   to="/predictor"
                   className="block text-center bg-background text-brand font-bold py-3 rounded-md text-sm shadow-xl mt-2 active:scale-[0.98] transition-transform hover:bg-surface"
                 >
-                  Estimate my deadline →
+                  Calculate my Deadline →
                 </Link>
               </div>
             </div>
