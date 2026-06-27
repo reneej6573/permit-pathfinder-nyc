@@ -143,8 +143,9 @@ function BenchmarksPage() {
         <p className="mt-6 text-[11px] text-ink-muted italic">
           Vertical tick on each bar marks the citywide average for the selected permit type. Source:
           NYC Open Data, dataset <code className="font-mono">w9ak-ipjd</code> (DOB NOW Job
-          Application Filings) — limited to filings that are both approved and have an issued
-          permit.
+          Application Filings) — approved filings from the last 24 months, with approval time
+          measured as days from <code className="font-mono">filing_date</code> to{" "}
+          <code className="font-mono">approved_date</code>.
         </p>
       </main>
     </div>
