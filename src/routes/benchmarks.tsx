@@ -27,19 +27,54 @@ export const Route = createFileRoute("/benchmarks")({
   }),
   loader: ({ context }) => {
     context.queryClient.ensureQueryData(neighborhoodStatsQuery);
+    context.queryClient.ensureQueryData(dcwpCategoriesQuery);
   },
   component: BenchmarksPage,
 });
 
 function BenchmarksPage() {
   const { data: stats } = useSuspenseQuery(neighborhoodStatsQuery);
+  const { data: dcwpCategories } = useSuspenseQuery(dcwpCategoriesQuery);
   const [permit, setPermit] = useState<PermitType>("General Construction");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedLicenseIds, setSelectedLicenseIds] = useState<Record<string, string[]>>({});
+  const dcwpQuery = useQuery(dcwpPermitsForCategoryQuery(selectedCategory));
+  const dcwpPermits = dcwpQuery.data ?? [];
+  const cached = selectedLicenseIds[selectedCategory];
+  const selectedIds = useMemo(() => {
+    if (!selectedCategory) return [] as string[];
+    if (cached) return cached;
+    return dcwpPermits.map((p) => p.id);
+  }, [selectedCategory, cached, dcwpPermits]);
+  const toggleLicense = (id: string) => {
+    if (!selectedCategory) return;
+    const current = cached ?? dcwpPermits.map((p) => p.id);
+    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
+    setSelectedLicenseIds((prev) => ({ ...prev, [selectedCategory]: next }));
+  };
+  const selectedLicenses = dcwpPermits.filter((p) => selectedIds.includes(p.id) && p.avgDays > 0);
+  const licenseBottleneck = selectedLicenses.reduce(
+    (acc, p) => (p.avgDays > acc.days ? { days: p.avgDays, label: p.licenseType } : acc),
+    { days: 0, label: "" as string },
+  );
+
   const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const sorted = useMemo(
     () => [...stats.neighborhoods].sort((a, b) => a.days[permit] - b.days[permit]).slice(0, 40),
     [stats.neighborhoods, permit],
   );
   const max = Math.max(1, ...sorted.map((n) => n.days[permit]));
+
+  // Borough Friction Index — borough medians for the selected DOB permit,
+  // combined with the bottleneck of any selected DCWP licenses (parallel filings).
+  const friction = useMemo(() => {
+    const base = boroughFriction(stats.neighborhoods, permit);
+    return base.map((f) => {
+      const combined = Math.max(f.days, licenseBottleneck.days);
+      return { ...f, combined };
+    });
+  }, [stats.neighborhoods, permit, licenseBottleneck.days]);
+  const frictionMax = Math.max(1, ...friction.map((f) => f.combined));
 
   return (
     <div className="min-h-screen bg-surface text-foreground">
