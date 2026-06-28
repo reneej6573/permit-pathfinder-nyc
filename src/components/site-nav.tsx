@@ -31,6 +31,13 @@ export function SiteNav() {
           >
             Borough Benchmarks
           </Link>
+          <Link
+            to="/neighborhoods"
+            activeProps={{ className: "text-brand underline decoration-2 underline-offset-4" }}
+            className="hover:text-foreground transition-colors"
+          >
+            Neighborhood Benchmarks
+          </Link>
         </div>
       </div>
       <div className="hidden sm:flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-ink-muted/70">
