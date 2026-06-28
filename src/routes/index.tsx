@@ -531,31 +531,8 @@ function ExplorerPage() {
               </div>
             </div>
 
-            <div className="bg-background border border-edge rounded-xl p-6">
-              <h2 className="font-display font-bold text-sm mb-4 border-b border-edge pb-2">
-                Borough Friction Index
-              </h2>
-              <div className="space-y-4">
-                {friction.map((f) => (
-                  <div key={f.borough}>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span>{f.borough}</span>
-                      <span>{f.days} days</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-surface rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-brand"
-                        style={{ width: `${(f.days / cityMaxFriction) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-6 text-[10px] leading-relaxed text-ink-muted italic">
-                * Estimated approval→issuance days across ZIPs in each borough for{" "}
-                <span className="font-semibold">{permit}</span>.
-              </p>
-            </div>
+
+
           </aside>
         </div>
 
