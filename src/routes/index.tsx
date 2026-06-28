@@ -6,7 +6,6 @@ import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
   BOROUGHS,
   PERMIT_TYPES,
-  boroughFriction,
   estimateTimeline,
   type Borough,
   type PermitType,
