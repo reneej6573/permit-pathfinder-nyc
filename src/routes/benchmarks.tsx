@@ -179,7 +179,132 @@ function BenchmarksPage() {
           </ul>
         </section>
 
+        <section className="mt-10 bg-background border border-edge rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-edge">
+            <div className="flex items-baseline justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="font-display font-bold text-sm uppercase tracking-wider">
+                  Borough Friction Index
+                </h2>
+                <p className="text-xs text-ink-muted mt-1">
+                  Typical days per borough for <span className="font-semibold text-foreground">{permit}</span>
+                  {selectedLicenses.length > 0 && (
+                    <> combined with {selectedLicenses.length} selected license{selectedLicenses.length === 1 ? "" : "s"} (parallel filings — bottleneck wins).</>
+                  )}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                  Business type
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="bg-surface border border-edge rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand/30 min-w-[14rem]"
+                >
+                  <option value="">— None —</option>
+                  {dcwpCategories.map((c) => (
+                    <option key={c.category} value={c.category}>
+                      {c.category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {selectedCategory && (
+              <div className="mt-4">
+                <div className="flex items-baseline justify-between mb-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                    Required licenses
+                  </p>
+                  {!dcwpQuery.isLoading && dcwpPermits.length > 0 && (
+                    <span className="text-[10px] font-mono text-ink-muted">
+                      {selectedIds.length} / {dcwpPermits.length}
+                    </span>
+                  )}
+                </div>
+                {dcwpQuery.isLoading ? (
+                  <p className="text-[11px] text-ink-muted py-2">Loading licenses…</p>
+                ) : dcwpPermits.length === 0 ? (
+                  <p className="text-[11px] text-ink-muted py-2">
+                    No license data for this business type.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+                    {dcwpPermits.map((p) => {
+                      const checked = selectedIds.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          aria-pressed={checked}
+                          onClick={() => toggleLicense(p.id)}
+                          className={
+                            checked
+                              ? "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-foreground bg-foreground text-background text-[11px] font-semibold"
+                              : "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-edge text-ink-muted hover:text-foreground hover:border-foreground transition-colors text-[11px] font-medium"
+                          }
+                        >
+                          <span aria-hidden>{checked ? "✓" : "+"}</span>
+                          <span className="truncate max-w-[18rem]">{p.licenseType}</span>
+                          {p.avgDays > 0 && (
+                            <span className="font-mono opacity-70">~{p.avgDays}d</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <ul>
+            {friction.map((f) => {
+              const widthPct = (f.combined / frictionMax) * 100;
+              const driverIsLicense =
+                licenseBottleneck.days > 0 && licenseBottleneck.days >= f.days;
+              return (
+                <li
+                  key={f.borough}
+                  className="px-6 py-4 border-b border-edge last:border-b-0 grid grid-cols-12 gap-4 items-center"
+                >
+                  <div className="col-span-12 sm:col-span-3 min-w-0">
+                    <p className="font-semibold text-sm">{f.borough}</p>
+                    <p className="text-[10px] text-ink-muted uppercase tracking-wider">
+                      DOB {f.days}d
+                      {licenseBottleneck.days > 0 && (
+                        <> · License {licenseBottleneck.days}d</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="col-span-8 sm:col-span-6">
+                    <div className="relative h-2 bg-surface rounded-full overflow-hidden">
+                      <div
+                        className={
+                          driverIsLicense
+                            ? "absolute inset-y-0 left-0 bg-brand rounded-full"
+                            : "absolute inset-y-0 left-0 bg-foreground/70 rounded-full"
+                        }
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-span-4 sm:col-span-3 text-right">
+                    <p className="font-display font-bold text-base">{f.combined} days</p>
+                    <p className="text-[10px] uppercase tracking-wider text-ink-muted font-semibold">
+                      {driverIsLicense ? `Driven by ${licenseBottleneck.label}` : "Driven by DOB"}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
         <p className="mt-6 text-[11px] text-ink-muted italic">
+          {void BOROUGHS}
           Vertical tick on each bar marks the citywide typical wait for the selected permit type. Source:
           NYC Open Data, dataset <code className="font-mono">w9ak-ipjd</code> (DOB NOW Job
           Application Filings) — approved filings from the last 24 months, with wait time
