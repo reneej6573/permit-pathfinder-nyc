@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
-import { PERMIT_TYPES, BOROUGHS, boroughFriction, type PermitType } from "@/lib/permit-data";
+import { PERMIT_TYPES, boroughFriction, type PermitType } from "@/lib/permit-data";
 import {
   neighborhoodStatsQuery,
   dcwpCategoriesQuery,
