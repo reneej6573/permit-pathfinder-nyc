@@ -61,12 +61,12 @@ function NeighborhoodsPage() {
 
   const setPermitAndUrl = (p: PermitType) => {
     setPermit(p);
-    navigate({ search: (prev) => ({ ...prev, permit: p }), replace: true });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, permit: p }), replace: true });
   };
   const setBoroughAndUrl = (b: Borough | "All") => {
     setBorough(b);
     navigate({
-      search: (prev) => ({ ...prev, borough: b === "All" ? undefined : b }),
+      search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, borough: b === "All" ? undefined : b }),
       replace: true,
     });
   };

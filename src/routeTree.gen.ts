@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PredictorRouteImport } from './routes/predictor'
+import { Route as NeighborhoodsRouteImport } from './routes/neighborhoods'
 import { Route as BenchmarksRouteImport } from './routes/benchmarks'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -22,6 +23,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const PredictorRoute = PredictorRouteImport.update({
   id: '/predictor',
   path: '/predictor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NeighborhoodsRoute = NeighborhoodsRouteImport.update({
+  id: '/neighborhoods',
+  path: '/neighborhoods',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BenchmarksRoute = BenchmarksRouteImport.update({
@@ -38,12 +44,14 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
+  '/neighborhoods': typeof NeighborhoodsRoute
   '/predictor': typeof PredictorRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
+  '/neighborhoods': typeof NeighborhoodsRoute
   '/predictor': typeof PredictorRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
@@ -51,20 +59,33 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/benchmarks': typeof BenchmarksRoute
+  '/neighborhoods': typeof NeighborhoodsRoute
   '/predictor': typeof PredictorRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/benchmarks' | '/predictor' | '/sitemap.xml'
+  fullPaths:
+    | '/'
+    | '/benchmarks'
+    | '/neighborhoods'
+    | '/predictor'
+    | '/sitemap.xml'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/benchmarks' | '/predictor' | '/sitemap.xml'
-  id: '__root__' | '/' | '/benchmarks' | '/predictor' | '/sitemap.xml'
+  to: '/' | '/benchmarks' | '/neighborhoods' | '/predictor' | '/sitemap.xml'
+  id:
+    | '__root__'
+    | '/'
+    | '/benchmarks'
+    | '/neighborhoods'
+    | '/predictor'
+    | '/sitemap.xml'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BenchmarksRoute: typeof BenchmarksRoute
+  NeighborhoodsRoute: typeof NeighborhoodsRoute
   PredictorRoute: typeof PredictorRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
 }
@@ -83,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/predictor'
       fullPath: '/predictor'
       preLoaderRoute: typeof PredictorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/neighborhoods': {
+      id: '/neighborhoods'
+      path: '/neighborhoods'
+      fullPath: '/neighborhoods'
+      preLoaderRoute: typeof NeighborhoodsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/benchmarks': {
@@ -105,6 +133,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BenchmarksRoute: BenchmarksRoute,
+  NeighborhoodsRoute: NeighborhoodsRoute,
   PredictorRoute: PredictorRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
 }
