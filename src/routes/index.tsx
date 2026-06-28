@@ -115,8 +115,6 @@ function ExplorerPage() {
     };
   }, [dobEstimate, dcwpPermits, dcwpSelectedIds, permit]);
 
-  const friction = useMemo(() => boroughFriction(neighborhoods, permit), [neighborhoods, permit]);
-  const cityMaxFriction = Math.max(1, ...friction.map((f) => f.days));
   const cityMedian = stats.cityMedianByPermit[permit] ?? 0;
   const selected = useMemo(
     () => neighborhoods.find((n) => n.slug === slug),
