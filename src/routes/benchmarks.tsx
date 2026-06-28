@@ -304,7 +304,7 @@ function BenchmarksPage() {
         </section>
 
         <p className="mt-6 text-[11px] text-ink-muted italic">
-          {void BOROUGHS}
+          
           Vertical tick on each bar marks the citywide typical wait for the selected permit type. Source:
           NYC Open Data, dataset <code className="font-mono">w9ak-ipjd</code> (DOB NOW Job
           Application Filings) — approved filings from the last 24 months, with wait time
