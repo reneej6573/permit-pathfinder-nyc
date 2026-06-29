@@ -121,6 +121,7 @@ function ExplorerPage() {
   // (parallel filings → bottleneck = longest expected wait).
   const combinedEstimate = useMemo(() => {
     const parts: { label: string; expected: number; min: number; max: number }[] = [];
+    const informational: { label: string }[] = [];
     if (dobEstimate) {
       parts.push({
         label: permit,
@@ -130,20 +131,27 @@ function ExplorerPage() {
       });
     }
     for (const p of dcwpPermits) {
-      if (!dcwpSelectedIds.includes(p.id) || p.avgDays <= 0) continue;
+      if (!dcwpSelectedIds.includes(p.id)) continue;
+      const label = `${p.category} — ${p.licenseType}`;
+      if (p.avgDays <= 0) {
+        informational.push({ label });
+        continue;
+      }
       const expected = Math.max(1, p.avgDays);
       const variance = Math.max(1, Math.round(expected * 0.18));
       parts.push({
-        label: `${p.category} — ${p.licenseType}`,
+        label,
         expected,
         min: Math.max(1, expected - variance),
         max: expected + variance,
       });
     }
+    if (!parts.length && !informational.length) return null;
     if (!parts.length) return null;
     const critical = parts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return {
       parts: [...parts].sort((a, b) => b.expected - a.expected),
+      informational,
       critical,
       expected: critical.expected,
       min: Math.max(...parts.map((p) => p.min)),
