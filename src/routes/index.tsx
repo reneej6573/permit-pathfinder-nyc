@@ -69,17 +69,43 @@ function ExplorerPage() {
   const [dcwpSelectionsByCategory, setDcwpSelectionsByCategory] = useState<
     Record<string, string[]>
   >({});
-  const dcwpQuery = useQuery(dcwpPermitsForCategoryQuery(selectedCategory));
-  const dcwpPermits = dcwpQuery.data ?? [];
+  const isRestaurant = selectedCategory === RESTAURANT_CATEGORY;
+  const restaurantSubCategories = useMemo(
+    () =>
+      isRestaurant
+        ? RESTAURANT_DCWP_CATEGORIES.filter((c) =>
+            dcwpCategories.some((dc) => dc.category === c),
+          )
+        : [],
+    [isRestaurant, dcwpCategories],
+  );
+  const singleDcwpQuery = useQuery(
+    dcwpPermitsForCategoryQuery(isRestaurant ? "" : selectedCategory),
+  );
+  const restaurantQueries = useQueries({
+    queries: restaurantSubCategories.map((c) => dcwpPermitsForCategoryQuery(c)),
+  });
+  const dcwpPermits: DcwpPermit[] = useMemo(() => {
+    if (!selectedCategory) return [];
+    if (isRestaurant) {
+      return restaurantQueries.flatMap((q) => q.data ?? []);
+    }
+    return singleDcwpQuery.data ?? [];
+  }, [selectedCategory, isRestaurant, restaurantQueries, singleDcwpQuery.data]);
+  const dcwpIsLoading = isRestaurant
+    ? restaurantQueries.some((q) => q.isLoading)
+    : singleDcwpQuery.isLoading;
   const cachedSelection = dcwpSelectionsByCategory[selectedCategory];
   const dcwpSelectedIds = useMemo(() => {
     if (!selectedCategory) return [] as string[];
     if (cachedSelection) return cachedSelection;
-    return dcwpPermits.map((p) => p.id);
+    // Default: select items that have timing data; informational rows stay off.
+    return dcwpPermits.filter((p) => p.avgDays > 0).map((p) => p.id);
   }, [selectedCategory, cachedSelection, dcwpPermits]);
   const toggleDcwp = (id: string) => {
     if (!selectedCategory) return;
-    const current = cachedSelection ?? dcwpPermits.map((p) => p.id);
+    const current =
+      cachedSelection ?? dcwpPermits.filter((p) => p.avgDays > 0).map((p) => p.id);
     const next = current.includes(id)
       ? current.filter((x) => x !== id)
       : [...current, id];
