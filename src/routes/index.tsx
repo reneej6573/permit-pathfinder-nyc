@@ -567,6 +567,17 @@ function ExplorerPage() {
                           </div>
                         );
                       })}
+                      {combinedEstimate.informational.map((p) => (
+                        <div
+                          key={`info:${p.label}`}
+                          className="flex items-center justify-between gap-2 text-[11px]"
+                        >
+                          <span className="opacity-70 truncate">{p.label}</span>
+                          <span className="font-mono opacity-70 italic shrink-0">
+                            timing unavailable
+                          </span>
+                        </div>
+                      ))}
                       <p className="text-[10px] opacity-60 leading-snug pt-1">
                         Permits and licenses file in parallel — the longest one sets your launch date.
                       </p>
