@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "";
+const BASE_URL = "https://permit-pathfinder-nyc.lovable.app";
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           { path: "/", changefreq: "weekly", priority: "1.0" },
           { path: "/predictor", changefreq: "weekly", priority: "0.9" },
           { path: "/benchmarks", changefreq: "weekly", priority: "0.8" },
+          { path: "/neighborhoods", changefreq: "weekly", priority: "0.8" },
         ];
         const urls = entries.map(
           (e) =>

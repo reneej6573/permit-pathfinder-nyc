@@ -1,0 +1,12 @@
+# NYC Permit Path
+
+> Track and compare NYC DOB building permit and DCWP business license approval times across neighborhoods, with predictive timeline estimates for small business launches.
+
+NYC Permit Path helps small business owners scout neighborhoods and plan launch dates by surfacing live wait-time data from NYC Open Data (DOB NOW and DCWP License Applications).
+
+## Pages
+
+- [Explorer](/): Interactive choropleth map of NYC ZIP codes ranked by permit wait times, with optional business-type license overlays.
+- [Timeline Estimator](/predictor): Pick permits and licenses for a target ZIP, get an estimated approval date and the deadline to file by.
+- [Borough Benchmarks](/benchmarks): Borough-level friction index comparing typical DOB permit and DCWP license wait times.
+- [Neighborhood Benchmarks](/neighborhoods): ZIP-by-ZIP breakdown within a selected borough for a chosen permit type.
