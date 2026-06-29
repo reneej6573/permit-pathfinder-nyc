@@ -457,13 +457,13 @@ function ExplorerPage() {
                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
                         Suggested licenses
                       </p>
-                      {!dcwpQuery.isLoading && dcwpPermits.length > 0 && (
+                      {!dcwpIsLoading && dcwpPermits.length > 0 && (
                         <span className="text-[10px] font-mono opacity-70">
                           {dcwpSelectedIds.length} / {dcwpPermits.length}
                         </span>
                       )}
                     </div>
-                    {dcwpQuery.isLoading ? (
+                    {dcwpIsLoading ? (
                       <p className="text-[11px] opacity-70 py-2">Loading licenses…</p>
                     ) : dcwpPermits.length === 0 ? (
                       <p className="text-[11px] opacity-70 py-2">
