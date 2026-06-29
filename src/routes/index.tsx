@@ -498,10 +498,16 @@ function ExplorerPage() {
                               >
                                 {checked ? "✓" : ""}
                               </span>
-                              <span className="flex-1 truncate">{p.licenseType}</span>
-                              {p.avgDays > 0 && (
+                              <span className="flex-1 truncate">
+                                {isRestaurant ? `${p.category} — ${p.licenseType}` : p.licenseType}
+                              </span>
+                              {p.avgDays > 0 ? (
                                 <span className="text-[10px] font-mono opacity-70">
                                   ~{p.avgDays}d
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono opacity-60 italic">
+                                  timing unavailable
                                 </span>
                               )}
                             </button>
