@@ -443,6 +443,9 @@ function ExplorerPage() {
                     className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
                   >
                     <option value="" className="text-foreground">— None —</option>
+                    <option value={RESTAURANT_CATEGORY} className="text-foreground">
+                      {RESTAURANT_CATEGORY}
+                    </option>
                     {dcwpCategories.map((c) => (
                       <option key={c.category} value={c.category} className="text-foreground">
                         {c.category}
