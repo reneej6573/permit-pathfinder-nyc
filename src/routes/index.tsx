@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
 import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
@@ -16,6 +16,18 @@ import {
   dcwpCategoriesQuery,
   dcwpPermitsForCategoryQuery,
 } from "@/lib/nyc-open-data/queries";
+import type { DcwpPermit } from "@/lib/nyc-open-data/dcwp-licenses.functions";
+
+const RESTAURANT_CATEGORY = "Restaurant / Food Service";
+// Curated DCWP categories relevant to restaurants. Intersected with the
+// live category list so we never request a category absent from the dataset.
+const RESTAURANT_DCWP_CATEGORIES = [
+  "Sidewalk Cafe",
+  "Tobacco Retail Dealer",
+  "Catering Establishment",
+  "Food Service Establishment",
+  "Stoop Line Stand",
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -57,17 +69,43 @@ function ExplorerPage() {
   const [dcwpSelectionsByCategory, setDcwpSelectionsByCategory] = useState<
     Record<string, string[]>
   >({});
-  const dcwpQuery = useQuery(dcwpPermitsForCategoryQuery(selectedCategory));
-  const dcwpPermits = dcwpQuery.data ?? [];
+  const isRestaurant = selectedCategory === RESTAURANT_CATEGORY;
+  const restaurantSubCategories = useMemo(
+    () =>
+      isRestaurant
+        ? RESTAURANT_DCWP_CATEGORIES.filter((c) =>
+            dcwpCategories.some((dc) => dc.category === c),
+          )
+        : [],
+    [isRestaurant, dcwpCategories],
+  );
+  const singleDcwpQuery = useQuery(
+    dcwpPermitsForCategoryQuery(isRestaurant ? "" : selectedCategory),
+  );
+  const restaurantQueries = useQueries({
+    queries: restaurantSubCategories.map((c) => dcwpPermitsForCategoryQuery(c)),
+  });
+  const dcwpPermits: DcwpPermit[] = useMemo(() => {
+    if (!selectedCategory) return [];
+    if (isRestaurant) {
+      return restaurantQueries.flatMap((q) => q.data ?? []);
+    }
+    return singleDcwpQuery.data ?? [];
+  }, [selectedCategory, isRestaurant, restaurantQueries, singleDcwpQuery.data]);
+  const dcwpIsLoading = isRestaurant
+    ? restaurantQueries.some((q) => q.isLoading)
+    : singleDcwpQuery.isLoading;
   const cachedSelection = dcwpSelectionsByCategory[selectedCategory];
   const dcwpSelectedIds = useMemo(() => {
     if (!selectedCategory) return [] as string[];
     if (cachedSelection) return cachedSelection;
-    return dcwpPermits.map((p) => p.id);
+    // Default: select items that have timing data; informational rows stay off.
+    return dcwpPermits.filter((p) => p.avgDays > 0).map((p) => p.id);
   }, [selectedCategory, cachedSelection, dcwpPermits]);
   const toggleDcwp = (id: string) => {
     if (!selectedCategory) return;
-    const current = cachedSelection ?? dcwpPermits.map((p) => p.id);
+    const current =
+      cachedSelection ?? dcwpPermits.filter((p) => p.avgDays > 0).map((p) => p.id);
     const next = current.includes(id)
       ? current.filter((x) => x !== id)
       : [...current, id];
@@ -83,6 +121,7 @@ function ExplorerPage() {
   // (parallel filings → bottleneck = longest expected wait).
   const combinedEstimate = useMemo(() => {
     const parts: { label: string; expected: number; min: number; max: number }[] = [];
+    const informational: { label: string }[] = [];
     if (dobEstimate) {
       parts.push({
         label: permit,
@@ -92,20 +131,27 @@ function ExplorerPage() {
       });
     }
     for (const p of dcwpPermits) {
-      if (!dcwpSelectedIds.includes(p.id) || p.avgDays <= 0) continue;
+      if (!dcwpSelectedIds.includes(p.id)) continue;
+      const label = `${p.category} — ${p.licenseType}`;
+      if (p.avgDays <= 0) {
+        informational.push({ label });
+        continue;
+      }
       const expected = Math.max(1, p.avgDays);
       const variance = Math.max(1, Math.round(expected * 0.18));
       parts.push({
-        label: `${p.category} — ${p.licenseType}`,
+        label,
         expected,
         min: Math.max(1, expected - variance),
         max: expected + variance,
       });
     }
+    if (!parts.length && !informational.length) return null;
     if (!parts.length) return null;
     const critical = parts.reduce((a, b) => (b.expected > a.expected ? b : a));
     return {
       parts: [...parts].sort((a, b) => b.expected - a.expected),
+      informational,
       critical,
       expected: critical.expected,
       min: Math.max(...parts.map((p) => p.min)),
@@ -405,6 +451,9 @@ function ExplorerPage() {
                     className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
                   >
                     <option value="" className="text-foreground">— None —</option>
+                    <option value={RESTAURANT_CATEGORY} className="text-foreground">
+                      {RESTAURANT_CATEGORY}
+                    </option>
                     {dcwpCategories.map((c) => (
                       <option key={c.category} value={c.category} className="text-foreground">
                         {c.category}
@@ -419,13 +468,13 @@ function ExplorerPage() {
                       <p className="text-[10px] font-bold uppercase tracking-widest opacity-80">
                         Suggested licenses
                       </p>
-                      {!dcwpQuery.isLoading && dcwpPermits.length > 0 && (
+                      {!dcwpIsLoading && dcwpPermits.length > 0 && (
                         <span className="text-[10px] font-mono opacity-70">
                           {dcwpSelectedIds.length} / {dcwpPermits.length}
                         </span>
                       )}
                     </div>
-                    {dcwpQuery.isLoading ? (
+                    {dcwpIsLoading ? (
                       <p className="text-[11px] opacity-70 py-2">Loading licenses…</p>
                     ) : dcwpPermits.length === 0 ? (
                       <p className="text-[11px] opacity-70 py-2">
@@ -457,10 +506,16 @@ function ExplorerPage() {
                               >
                                 {checked ? "✓" : ""}
                               </span>
-                              <span className="flex-1 truncate">{p.licenseType}</span>
-                              {p.avgDays > 0 && (
+                              <span className="flex-1 truncate">
+                                {isRestaurant ? `${p.category} — ${p.licenseType}` : p.licenseType}
+                              </span>
+                              {p.avgDays > 0 ? (
                                 <span className="text-[10px] font-mono opacity-70">
                                   ~{p.avgDays}d
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono opacity-60 italic">
+                                  timing unavailable
                                 </span>
                               )}
                             </button>
@@ -512,6 +567,17 @@ function ExplorerPage() {
                           </div>
                         );
                       })}
+                      {combinedEstimate.informational.map((p) => (
+                        <div
+                          key={`info:${p.label}`}
+                          className="flex items-center justify-between gap-2 text-[11px]"
+                        >
+                          <span className="opacity-70 truncate">{p.label}</span>
+                          <span className="font-mono opacity-70 italic shrink-0">
+                            timing unavailable
+                          </span>
+                        </div>
+                      ))}
                       <p className="text-[10px] opacity-60 leading-snug pt-1">
                         Permits and licenses file in parallel — the longest one sets your launch date.
                       </p>
