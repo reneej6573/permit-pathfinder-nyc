@@ -94,6 +94,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Inter:wght@400;500;600&display=swap" },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "NYC Permit Path",
+          url: "https://permit-pathfinder-nyc.lovable.app",
+          description:
+            "Track and compare NYC building and business permit approval times by neighborhood.",
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "NYC Permit Path",
+          url: "https://permit-pathfinder-nyc.lovable.app",
+          logo: "https://permit-pathfinder-nyc.lovable.app/favicon.ico",
+        }),
+      },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

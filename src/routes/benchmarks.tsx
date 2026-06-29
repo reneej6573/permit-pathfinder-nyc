@@ -114,6 +114,7 @@ function BenchmarksPage() {
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
+              aria-label="Business type (optional)"
               className="bg-background border border-edge rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand/30 w-full max-w-sm"
             >
               <option value="">— None —</option>

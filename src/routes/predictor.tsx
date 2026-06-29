@@ -280,6 +280,7 @@ function PredictorPage() {
               <select
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
+                aria-label="Target ZIP code"
                 className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
               >
                 {neighborhoods.map((n) => (
@@ -346,6 +347,7 @@ function PredictorPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
+                aria-label="Select your business type"
                 className="w-full bg-surface border border-edge rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30"
               >
                 <option value="">— Choose a business category —</option>
@@ -429,10 +431,14 @@ function PredictorPage() {
             </div>
 
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted">
+              <label
+                htmlFor="target-permit-readiness-date"
+                className="text-[10px] font-bold uppercase tracking-widest block mb-1.5 text-ink-muted"
+              >
                 Target Permit Readiness Date
               </label>
               <input
+                id="target-permit-readiness-date"
                 type="date"
                 value={launchDate}
                 min={toInputDate(today)}

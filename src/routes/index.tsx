@@ -296,6 +296,7 @@ function ExplorerPage() {
                 <select
                   value={permit}
                   onChange={(e) => setPermit(e.target.value as PermitType)}
+                  aria-label="Filter ZIP ranking by permit type"
                   className="bg-surface border border-edge rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand/30"
                 >
                   {PERMIT_TYPES.map((p) => (
@@ -415,6 +416,7 @@ function ExplorerPage() {
                   <select
                     value={permit}
                     onChange={(e) => setPermit(e.target.value as PermitType)}
+                    aria-label="DOB permit type"
                     className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
                   >
                     {PERMIT_TYPES.map((p) => (
@@ -431,6 +433,7 @@ function ExplorerPage() {
                   <select
                     value={slug}
                     onChange={(e) => setSlug(e.target.value)}
+                    aria-label="Target ZIP code"
                     className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
                   >
                     {neighborhoods.map((n) => (
@@ -448,6 +451,7 @@ function ExplorerPage() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
+                    aria-label="Business type (optional)"
                     className="w-full bg-white/10 border border-white/20 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 ring-white/30"
                   >
                     <option value="" className="text-foreground">— None —</option>
@@ -603,7 +607,7 @@ function ExplorerPage() {
           Source: NYC Open Data — DOB NOW: Build (dataset{" "}
           <code className="font-mono">rbx6-tga4</code>) and DCWP License Applications (dataset{" "}
           <code className="font-mono">ptev-4hud</code>). Cached server-side, refreshed hourly.
-          Snapshot fetched {new Date(stats.fetchedAt).toLocaleString()}.
+          Snapshot fetched <span suppressHydrationWarning>{new Date(stats.fetchedAt).toLocaleString()}</span>.
         </footer>
       </main>
     </div>
