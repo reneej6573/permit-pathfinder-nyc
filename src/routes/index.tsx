@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
 import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
@@ -16,6 +16,18 @@ import {
   dcwpCategoriesQuery,
   dcwpPermitsForCategoryQuery,
 } from "@/lib/nyc-open-data/queries";
+import type { DcwpPermit } from "@/lib/nyc-open-data/dcwp-licenses.functions";
+
+const RESTAURANT_CATEGORY = "Restaurant / Food Service";
+// Curated DCWP categories relevant to restaurants. Intersected with the
+// live category list so we never request a category absent from the dataset.
+const RESTAURANT_DCWP_CATEGORIES = [
+  "Sidewalk Cafe",
+  "Tobacco Retail Dealer",
+  "Catering Establishment",
+  "Food Service Establishment",
+  "Stoop Line Stand",
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
