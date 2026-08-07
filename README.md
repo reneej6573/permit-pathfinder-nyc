@@ -98,15 +98,16 @@ Built for the **Knowledge House × Bloomberg Hackathon** and presented on **June
 
 ---
 
-## Roadmap
+## What's Next?
 
-Ideas we didn't get to within the hackathon window:
 
-- [ ] Expand coverage beyond the current 80 ZIP codes to all NYC ZIPs
+- [ ] Expand coverage beyond NYC to outer regions
 - [ ] Historical trend view — are approval times improving or degrading over time?
 - [ ] Cost estimation layered onto timeline projections
 - [ ] Saved comparisons and shareable ZIP shortlists
 - [ ] Seasonality analysis (does filing month affect approval speed?)
+- [ ] AI agent that can do everything above + submit secondary applications on owner's behalf, or send reminders
+      in accordance with deadlines
 
 ---
 
