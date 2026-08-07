@@ -109,8 +109,3 @@ Built for the **Knowledge House × Bloomberg Hackathon** and presented on **June
 - [ ] AI agent that can do everything above + submit secondary applications on owner's behalf, or send reminders
       in accordance with deadlines
 
----
-
-## License
-
-[Add your license here]
