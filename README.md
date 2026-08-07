@@ -106,6 +106,6 @@ Built for the **Knowledge House × Bloomberg Hackathon** and presented on **June
 - [ ] Cost estimation layered onto timeline projections
 - [ ] Saved comparisons and shareable ZIP shortlists
 - [ ] Seasonality analysis (does filing month affect approval speed?)
-- [ ] AI agent that can do everything above + submit secondary applications on owner's behalf, or send reminders
+- [ ] AI agent that can show everything above + submit secondary applications on owner's behalf, or send reminders
       in accordance with deadlines
 
