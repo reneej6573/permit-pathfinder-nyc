@@ -1,6 +1,18 @@
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getLatestDataDate } from "@/lib/nyc-open-data/dob-permits.functions";
 
 export function SiteNav() {
+  const fetchLatest = useServerFn(getLatestDataDate);
+  const { data } = useQuery({
+    queryKey: ["dob-latest-date"],
+    queryFn: () => fetchLatest(),
+    staleTime: 6 * 60 * 60 * 1000,
+  });
+  const label = data?.latest
+    ? new Date(data.latest).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+    : "…";
   return (
     <nav className="border-b border-edge bg-background px-6 py-4 flex items-center justify-between sticky top-0 z-20 backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="flex items-center gap-8">
@@ -41,7 +53,7 @@ export function SiteNav() {
         </div>
       </div>
       <div className="hidden sm:flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-ink-muted/70">
-        Data updated: 14 Oct 2026
+        Data updated: {label}
       </div>
     </nav>
   );
