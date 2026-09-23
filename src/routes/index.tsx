@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery, useQuery, useQueries } from "@tanstack/react-query";
 import { SiteNav } from "@/components/site-nav";
+import { DataFreshnessPanel } from "@/components/data-freshness-panel";
 import { NycGoogleMap } from "@/components/nyc-google-map";
 import {
   BOROUGHS,
@@ -602,6 +603,8 @@ function ExplorerPage() {
 
           </aside>
         </div>
+
+        <DataFreshnessPanel />
 
         <footer className="mt-16 pt-8 border-t border-edge text-[11px] text-ink-muted">
           Source: NYC Open Data — DOB NOW: Build (dataset{" "}

@@ -66,3 +66,12 @@ export async function fetchSocrata<T = Record<string, string>>(
   CACHE.set(url, { at: now, ttl, data });
   return data;
 }
+
+// Fetch plus cache metadata (when the cached copy was successfully fetched).
+export async function fetchSocrataWithMeta<T = Record<string, string>>(
+  opts: SocrataFetchOptions,
+): Promise<{ data: T[]; fetchedAt: number }> {
+  const data = await fetchSocrata<T>(opts);
+  const entry = CACHE.get(buildUrl(opts));
+  return { data, fetchedAt: entry?.at ?? Date.now() };
+}
