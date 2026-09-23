@@ -512,3 +512,13 @@ export const getDobSeasonality = createServerFn({ method: "GET" }).handler(async
   return all;
 });
 
+
+// ---- Latest source record date (for "Data updated" badge) ----------------
+export const getLatestDataDate = createServerFn({ method: "GET" }).handler(async () => {
+  const rows = await fetchSocrata<{ latest?: string }>({
+    datasetId: DATASET.id,
+    params: { $select: "max(first_permit_date) as latest" },
+    cacheTtlMs: 6 * 60 * 60 * 1000,
+  });
+  return { latest: rows[0]?.latest ?? null };
+});
